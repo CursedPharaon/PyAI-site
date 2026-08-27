@@ -100,7 +100,16 @@
             outline: none;
         }
         .input-area input:focus { border-color: rgba(0,180,255,0.4); }
-        .input-area button { padding: 10px 20px; border-radius: 30px; border: none; background: linear-gradient(135deg, #0088ff, #5500ff); color: white; font-weight: 600; font-size: 13px; cursor: pointer; }
+        .input-area button {
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(135deg, #0088ff, #5500ff);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
 
         .status-box {
             padding: 10px;
@@ -144,6 +153,7 @@
             <p>Нейросеть нового поколения</p>
         </div>
 
+        <!-- Форма входа/регистрации -->
         <div id="authForm">
             <div id="authTitle" style="text-align:center;color:#8899bb;font-size:16px;margin-bottom:16px;">Вход</div>
             <div class="form-group">
@@ -159,6 +169,7 @@
             <div id="authMessage" class="message"></div>
         </div>
 
+        <!-- Чат -->
         <div id="chatArea" class="hidden">
             <div class="status-box" id="statusBox">🔄 Загрузка...</div>
             <div class="chat-box" id="chatBox">
