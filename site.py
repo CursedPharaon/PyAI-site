@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, send_file
 import requests
 import json
@@ -7,13 +8,13 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 # ============================================
-# ТОЧНО ТАКИЕ ЖЕ НАСТРОЙКИ, КАК В БОТЕ
+# НАСТРОЙКИ
 # ============================================
 JSONBIN_KEY = "$2a$10$3T6Ssc3MDy8btFzOD4PTjOzciiAlCszOrB4zJDiorULg2BRrdPWRS"
 BIN_ID = "6a90a8efda38895dfe19be69"
 
 # ============================================
-# ТОЧНО ТАКИЕ ЖЕ ФУНКЦИИ, КАК В БОТЕ
+# ФУНКЦИИ
 # ============================================
 def load_users():
     url = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
@@ -198,7 +199,7 @@ def chat():
     
     status = check_subscription(username)
     if status != "active":
-        return jsonify({'success': False, 'error': 'Подписка неактивна. Напишите @cursed_pharaon для продления'})
+        return jsonify({'success': False, 'error': 'Подписка неактивна'})
     
     response = ask_ai(message)
     return jsonify({'success': True, 'response': response})
