@@ -2,12 +2,19 @@ from flask import Flask, request, jsonify, send_file
 import requests
 import json
 import os
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
+# ============================================
+# ТОЧНО ТАКИЕ ЖЕ НАСТРОЙКИ, КАК В БОТЕ
+# ============================================
 JSONBIN_KEY = "$2a$10$3T6Ssc3MDy8btFzOD4PTjOzciiAlCszOrB4zJDiorULg2BRrdPWRS"
 BIN_ID = "6a90a8efda38895dfe19be69"
 
+# ============================================
+# ТОЧНО ТАКИЕ ЖЕ ФУНКЦИИ, КАК В БОТЕ
+# ============================================
 def load_users():
     url = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
     headers = {"X-Access-Key": JSONBIN_KEY}
@@ -17,7 +24,8 @@ def load_users():
             data = r.json()
             return data.get("record", {})
         return {}
-    except:
+    except Exception as e:
+        print(f"load_users error: {e}")
         return {}
 
 def save_users(users):
@@ -28,16 +36,15 @@ def save_users(users):
     }
     try:
         r = requests.put(url, json=users, headers=headers, timeout=10)
+        print(f"save_users: {r.status_code}")
         return r.status_code == 200
-    except:
+    except Exception as e:
+        print(f"save_users error: {e}")
         return False
 
-def get_user_by_username(username):
-    users = load_users()
-    return users.get(username)
-
 def check_password(username, password):
-    user = get_user_by_username(username)
+    users = load_users()
+    user = users.get(username)
     if not user:
         return False
     return user.get("password") == password
@@ -46,21 +53,83 @@ def check_subscription(username):
     users = load_users()
     if username not in users:
         return None
-    return users[username].get("status", "inactive")
+    user = users[username]
+    status = user.get("status", "inactive")
+    end_date = user.get("end_date")
+    
+    if status == "active" and end_date:
+        if datetime.now().isoformat() > end_date:
+            user["status"] = "inactive"
+            user["plan"] = None
+            user["end_date"] = None
+            save_users(users)
+            return "inactive"
+    return status
 
 def get_subscription_info(username):
     users = load_users()
     if username not in users:
         return None
     user = users[username]
-    return {
-        "status": user.get("status", "inactive"),
-        "plan": user.get("plan", "Нет"),
-        "days_left": user.get("days_left", 0)
+    status = user.get("status", "inactive")
+    plan_key = user.get("plan")
+    
+    PLANS = {
+        "1": "Неделя",
+        "2": "Месяц",
+        "3": "Год",
+        "4": "Вечная"
     }
+    plan_name = PLANS.get(plan_key, "Нет")
+    
+    end_date = user.get("end_date")
+    if status == "active" and end_date:
+        end = datetime.fromisoformat(end_date)
+        days_left = (end - datetime.now()).days
+        if days_left < 0:
+            days_left = 0
+        return {
+            "status": status,
+            "plan": plan_name,
+            "days_left": days_left
+        }
+    elif status == "active" and not end_date:
+        return {
+            "status": status,
+            "plan": "Вечная",
+            "days_left": "∞"
+        }
+    else:
+        return {
+            "status": "inactive",
+            "plan": "Нет",
+            "days_left": 0
+        }
+
+def ask_ai(question):
+    try:
+        r = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            json={
+                "model": "openrouter/free",
+                "messages": [
+                    {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть."},
+                    {"role": "user", "content": question}
+                ]
+            },
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer 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'
+            },
+            timeout=30
+        )
+        r.raise_for_status()
+        return r.json()['choices'][0]['message']['content']
+    except Exception as e:
+        return f"⚠️ Ошибка: {str(e)[:200]}"
 
 # ============================================
-# МАРШРУТЫ (ВСЁ ВНУТРИ ФУНКЦИЙ)
+# МАРШРУТЫ
 # ============================================
 @app.route('/')
 def index():
@@ -106,9 +175,11 @@ def register_web():
     
     users[username] = {
         "password": password,
+        "user_id": None,
         "status": "inactive",
         "plan": None,
-        "end_date": None
+        "end_date": None,
+        "created_at": datetime.now().isoformat()
     }
     
     if save_users(users):
@@ -127,29 +198,14 @@ def chat():
     
     status = check_subscription(username)
     if status != "active":
-        return jsonify({'success': False, 'error': 'Подписка неактивна'})
+        return jsonify({'success': False, 'error': 'Подписка неактивна. Напишите @cursed_pharaon для продления'})
     
-    try:
-        r = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            json={
-                "model": "openrouter/free",
-                "messages": [
-                    {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть."},
-                    {"role": "user", "content": message}
-                ]
-            },
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer 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'
-            },
-            timeout=30
-        )
-        r.raise_for_status()
-        response = r.json()['choices'][0]['message']['content']
-        return jsonify({'success': True, 'response': response})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)[:200]})
+    response = ask_ai(message)
+    return jsonify({'success': True, 'response': response})
+
+@app.route('/ping')
+def ping():
+    return "OK", 200
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 10000))
