@@ -60,7 +60,8 @@ def get_subscription_info(username):
 
 @app.route('/')
 def index():
-    return send_file('index.html')
+    import os
+return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
 
 @app.route('/login', methods=['POST'])
 def login():
