@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_file
 import requests
 import json
+import os
 
 app = Flask(__name__)
 
@@ -58,10 +59,12 @@ def get_subscription_info(username):
         "days_left": user.get("days_left", 0)
     }
 
+# ============================================
+# МАРШРУТЫ (ВСЁ ВНУТРИ ФУНКЦИЙ)
+# ============================================
 @app.route('/')
 def index():
-    import os
-return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
+    return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -126,7 +129,6 @@ def chat():
     if status != "active":
         return jsonify({'success': False, 'error': 'Подписка неактивна'})
     
-    # Отправляем запрос к OpenRouter
     try:
         r = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
@@ -150,4 +152,5 @@ def chat():
         return jsonify({'success': False, 'error': str(e)[:200]})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=10000)
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
