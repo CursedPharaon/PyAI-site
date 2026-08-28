@@ -1105,34 +1105,95 @@
         }
 
         async function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text || !currentUser) return;
+    const text = messageInput.value.trim();
+    if (!text || !currentUser) return;
 
-            addMessage('user', text);
-            messageInput.value = '';
-            sendBtn.disabled = true;
-            typing.style.display = 'flex';
+    addMessage('user', text);
+    messageInput.value = '';
+    sendBtn.disabled = true;
+    typing.style.display = 'flex';
 
-            try {
-                const res = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentUser, message: text })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    addMessage('ai', data.response);
-                } else {
-                    addMessage('ai', '❌ ' + (data.error || 'Ошибка'));
+    try {
+        // Показываем "размышление"
+        const thinkingMsg = document.createElement('div');
+        thinkingMsg.className = 'message ai';
+        const thinkingLabel = document.createElement('span');
+        thinkingLabel.className = 'label';
+        thinkingLabel.textContent = '🧠 PyAI';
+        const thinkingBubble = document.createElement('div');
+        thinkingBubble.className = 'bubble';
+        thinkingBubble.style.color = '#6c757d';
+        thinkingBubble.style.fontStyle = 'italic';
+        thinkingBubble.textContent = '🤔 Размышляю...';
+        thinkingMsg.appendChild(thinkingLabel);
+        thinkingMsg.appendChild(thinkingBubble);
+        chatMessages.insertBefore(thinkingMsg, typing);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const res = await fetch('/chat/stream', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser, message: text })
+        });
+
+        // Удаляем "размышление"
+        thinkingMsg.remove();
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+
+        // Создаём сообщение для ответа
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message ai';
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = '🧠 PyAI';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        msgDiv.appendChild(label);
+        msgDiv.appendChild(bubble);
+        chatMessages.insertBefore(msgDiv, typing);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.done) {
+                            break;
+                        }
+                        if (parsed.text) {
+                            fullResponse += parsed.text;
+                            bubble.textContent = fullResponse;
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    } catch (e) {
+                        // Игнорируем
+                    }
                 }
-            } catch (error) {
-                addMessage('ai', '❌ Ошибка: ' + error.message);
-            } finally {
-                typing.style.display = 'none';
-                sendBtn.disabled = false;
-                chatMessages.scrollTop = chatMessages.scrollHeight;
             }
         }
+
+        if (!fullResponse) {
+            bubble.textContent = '⚠️ Пустой ответ';
+        }
+
+    } catch (error) {
+        addMessage('ai', '❌ Ошибка: ' + error.message);
+    } finally {
+        typing.style.display = 'none';
+        sendBtn.disabled = false;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
 
         // ============================================================
         // ДОП. ФУНКЦИИ
