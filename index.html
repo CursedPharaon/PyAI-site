@@ -96,6 +96,11 @@
             color: #721c24;
         }
 
+        .status-badge.admin {
+            background: #cce5ff;
+            color: #004085;
+        }
+
         .btn {
             padding: 4px 12px;
             border-radius: 6px;
@@ -117,6 +122,33 @@
             background: #f1f3f5;
         }
 
+        .btn-primary {
+            background: #0066ff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0052cc;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
         /* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
         .main-container {
             display: flex;
@@ -125,12 +157,12 @@
             overflow: hidden;
         }
 
-        /* ===== БОКОВАЯ ПАНЕЛЬ (скрыта на телефоне) ===== */
+        /* ===== БОКОВАЯ ПАНЕЛЬ ===== */
         .sidebar {
             display: none;
         }
 
-        /* ===== ОСНОВНАЯ ОБЛАСТЬ (чат) ===== */
+        /* ===== ОСНОВНАЯ ОБЛАСТЬ ===== */
         .chat-area {
             flex: 1;
             display: flex;
@@ -194,7 +226,7 @@
             padding: 0 4px;
         }
 
-        /* ===== ОФОРМЛЕНИЕ КОДА ===== */
+        /* ===== КОД ===== */
         .message .bubble pre {
             background: #1e1e2e;
             color: #cdd6f4;
@@ -229,7 +261,6 @@
             font-size: 10px;
             cursor: pointer;
             transition: 0.2s;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         .copy-btn:hover {
@@ -241,7 +272,7 @@
             color: #1a1a2e;
         }
 
-        /* ===== ТАБЛИЦЫ (адаптивные) ===== */
+        /* ===== ТАБЛИЦЫ ===== */
         .message .bubble table {
             border-collapse: collapse;
             width: 100%;
@@ -280,19 +311,7 @@
             font-size: 13px;
         }
 
-        /* ===== СПИСКИ ===== */
-        .message .bubble ul,
-        .message .bubble ol {
-            padding-left: 20px;
-            margin: 6px 0;
-        }
-
-        .message .bubble li {
-            margin: 3px 0;
-            font-size: 13px;
-        }
-
-        /* ===== ВВОД СООБЩЕНИЯ ===== */
+        /* ===== ВВОД ===== */
         .chat-input {
             padding: 10px 14px;
             border-top: 1px solid #e9ecef;
@@ -341,32 +360,51 @@
             cursor: not-allowed;
         }
 
-        /* ===== АНИМАЦИЯ ПЕЧАТИ ===== */
-        .typing {
+        /* ===== АДМИН-ПАНЕЛЬ ===== */
+        .admin-panel {
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 10px 14px;
             display: none;
-            padding: 6px 12px;
-            background: #f1f3f5;
-            border-radius: 20px;
-            width: fit-content;
-            margin: 4px 0;
+            flex-shrink: 0;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
-        .typing span {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            background: #6c757d;
-            border-radius: 50%;
-            margin: 0 2px;
-            animation: typing 1.4s infinite both;
+        .admin-panel.show {
+            display: block;
         }
 
-        .typing span:nth-child(2) { animation-delay: 0.2s; }
-        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        .admin-panel h3 {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
 
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-            40% { transform: scale(1); opacity: 1; }
+        .admin-panel .admin-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .admin-panel .admin-actions .btn {
+            font-size: 11px;
+            padding: 4px 12px;
+        }
+
+        .admin-panel .admin-result {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
         }
 
         /* ===== АВТОРИЗАЦИЯ ===== */
@@ -505,7 +543,7 @@
             color: #721c24;
         }
 
-        /* ===== ДЕСКТОПНАЯ ВЕРСИЯ ===== */
+        /* ===== АДАПТИВ ===== */
         @media (min-width: 768px) {
             .header {
                 padding: 12px 24px;
@@ -631,23 +669,23 @@
                 padding: 40px;
                 max-width: 400px;
             }
+
+            .admin-panel {
+                padding: 12px 24px;
+            }
         }
 
-        /* ===== СКРОЛЛ ===== */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
         }
-
         ::-webkit-scrollbar-track {
             background: transparent;
         }
-
         ::-webkit-scrollbar-thumb {
             background: #dee2e6;
             border-radius: 10px;
         }
-
         ::-webkit-scrollbar-thumb:hover {
             background: #ced4da;
         }
@@ -671,7 +709,7 @@
     <!-- ===== ОСНОВНАЯ ОБЛАСТЬ ===== -->
     <div class="main-container" id="mainContainer" style="display:none;">
 
-        <!-- Боковая панель (только на десктопе) -->
+        <!-- Боковая панель -->
         <aside class="sidebar">
             <div class="sidebar-card">
                 <h3>📊 Подписка</h3>
@@ -684,6 +722,13 @@
                 <div class="quick-actions">
                     <button onclick="clearChatHistory()">🧹 Очистить память</button>
                     <button onclick="exportChat()">📥 Экспорт чата</button>
+                </div>
+            </div>
+
+            <div class="sidebar-card" id="adminSidebar" style="display:none;">
+                <h3>👑 Админ-панель</h3>
+                <div class="quick-actions">
+                    <button onclick="toggleAdminPanel()">⚙️ Открыть панель</button>
                 </div>
             </div>
         </aside>
@@ -701,6 +746,19 @@
             <div class="chat-input">
                 <input type="text" id="messageInput" placeholder="Спроси у PyAI..." />
                 <button id="sendBtn">➤</button>
+            </div>
+
+            <!-- Админ-панель -->
+            <div class="admin-panel" id="adminPanel">
+                <h3>👑 Админ-панель</h3>
+                <div class="admin-actions">
+                    <button class="btn btn-success" onclick="adminListUsers()">📋 Список</button>
+                    <button class="btn btn-primary" onclick="adminGiveAccess()">✅ Дать доступ</button>
+                    <button class="btn btn-danger" onclick="adminRemoveAccess()">❌ Отключить</button>
+                    <button class="btn btn-danger" onclick="adminDeleteUser()">🗑️ Удалить</button>
+                    <button class="btn btn-outline" onclick="adminStats()">📊 Статистика</button>
+                </div>
+                <div class="admin-result" id="adminResult">Команды админа:</div>
             </div>
         </div>
     </div>
@@ -732,11 +790,17 @@
 
     <script>
         // ============================================================
-        // ПОЛНЫЙ JS (без изменений, тот же что был)
+        // СОСТОЯНИЕ
         // ============================================================
         let currentUser = null;
         let isLogin = true;
+        let isAdmin = false;
 
+        const ADMIN_NAME = "cursed_dev";
+
+        // ============================================================
+        // DOM
+        // ============================================================
         const authContainer = document.getElementById('authContainer');
         const authTitle = document.getElementById('authTitle');
         const authSubtitle = document.getElementById('authSubtitle');
@@ -758,7 +822,13 @@
 
         const sidebarPlan = document.getElementById('sidebarPlan');
         const sidebarDays = document.getElementById('sidebarDays');
+        const adminSidebar = document.getElementById('adminSidebar');
+        const adminPanel = document.getElementById('adminPanel');
+        const adminResult = document.getElementById('adminResult');
 
+        // ============================================================
+        // АВТОРИЗАЦИЯ
+        // ============================================================
         function showAuthMessage(text, type) {
             authMessage.textContent = text;
             authMessage.className = 'message ' + type;
@@ -835,19 +905,140 @@
 
             usernameDisplay.textContent = data.username;
 
+            // Проверка админа
+            if (data.username === ADMIN_NAME) {
+                isAdmin = true;
+                statusBadge.textContent = '👑 Админ';
+                statusBadge.className = 'status-badge admin';
+                adminSidebar.style.display = 'block';
+                adminPanel.classList.add('show');
+                adminResult.textContent = '👑 Добро пожаловать, Админ!';
+            } else {
+                isAdmin = false;
+                adminSidebar.style.display = 'none';
+                adminPanel.classList.remove('show');
+            }
+
             if (data.status === 'active') {
-                statusBadge.textContent = '🟢 Активна';
-                statusBadge.className = 'status-badge active';
+                if (!isAdmin) {
+                    statusBadge.textContent = '🟢 Активна';
+                    statusBadge.className = 'status-badge active';
+                }
                 sidebarPlan.textContent = '📋 ' + data.plan;
                 sidebarDays.textContent = data.days_left === '∞' ? '♾️ Вечная' : '⏳ ' + data.days_left + ' дн.';
             } else {
-                statusBadge.textContent = '🔴 Неактивна';
-                statusBadge.className = 'status-badge inactive';
+                if (!isAdmin) {
+                    statusBadge.textContent = '🔴 Неактивна';
+                    statusBadge.className = 'status-badge inactive';
+                }
                 sidebarPlan.textContent = '❌ Нет подписки';
                 sidebarDays.textContent = 'Напишите @cursed_pharaon';
             }
         }
 
+        // ============================================================
+        // АДМИН-ФУНКЦИИ (только для cursed_dev)
+        // ============================================================
+        function toggleAdminPanel() {
+            if (!isAdmin) return;
+            adminPanel.classList.toggle('show');
+        }
+
+        async function adminListUsers() {
+            if (!isAdmin) return;
+            adminResult.textContent = '⏳ Загрузка...';
+            try {
+                const res = await fetch('/admin/listusers');
+                const data = await res.json();
+                if (data.success) {
+                    adminResult.textContent = '📋 Список пользователей:\n' + data.users;
+                } else {
+                    adminResult.textContent = '❌ ' + data.error;
+                }
+            } catch (e) {
+                adminResult.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+
+        async function adminGiveAccess() {
+            if (!isAdmin) return;
+            const username = prompt('Введите имя пользователя:');
+            if (!username) return;
+            const plan = prompt('Введите план (1-неделя, 2-месяц, 3-год, 4-вечная):');
+            if (!plan || !['1','2','3','4'].includes(plan)) {
+                adminResult.textContent = '❌ Неверный план';
+                return;
+            }
+            adminResult.textContent = '⏳ Выдача доступа...';
+            try {
+                const res = await fetch('/admin/giveaccess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, plan })
+                });
+                const data = await res.json();
+                adminResult.textContent = data.success ? '✅ ' + data.message : '❌ ' + data.error;
+            } catch (e) {
+                adminResult.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+
+        async function adminRemoveAccess() {
+            if (!isAdmin) return;
+            const username = prompt('Введите имя пользователя:');
+            if (!username) return;
+            adminResult.textContent = '⏳ Отключение доступа...';
+            try {
+                const res = await fetch('/admin/removeaccess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const data = await res.json();
+                adminResult.textContent = data.success ? '✅ ' + data.message : '❌ ' + data.error;
+            } catch (e) {
+                adminResult.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+
+        async function adminDeleteUser() {
+            if (!isAdmin) return;
+            const username = prompt('Введите имя пользователя для удаления:');
+            if (!username) return;
+            if (!confirm(`Удалить пользователя ${username}? Это необратимо!`)) return;
+            adminResult.textContent = '⏳ Удаление...';
+            try {
+                const res = await fetch('/admin/deleteuser', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const data = await res.json();
+                adminResult.textContent = data.success ? '✅ ' + data.message : '❌ ' + data.error;
+            } catch (e) {
+                adminResult.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+
+        async function adminStats() {
+            if (!isAdmin) return;
+            adminResult.textContent = '⏳ Загрузка статистики...';
+            try {
+                const res = await fetch('/admin/stats');
+                const data = await res.json();
+                if (data.success) {
+                    adminResult.textContent = '📊 Статистика:\n' + data.stats;
+                } else {
+                    adminResult.textContent = '❌ ' + data.error;
+                }
+            } catch (e) {
+                adminResult.textContent = '❌ Ошибка: ' + e.message;
+            }
+        }
+
+        // ============================================================
+        // ЧАТ
+        // ============================================================
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -856,17 +1047,12 @@
 
         function formatMessage(text) {
             let html = text;
-
-            // Код
             html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
                 return `<pre><code>${escapeHtml(code.trim())}</code><button class="copy-btn">📋</button></pre>`;
             });
-
-            // Таблицы
             html = html.replace(/\|(.+)\|\n\|[-: |]+\|\n((?:\|.+\|\n?)+)/g, function(match, header, rows) {
                 const headers = header.split('|').filter(h => h.trim());
                 const rowsData = rows.trim().split('\n').map(row => row.split('|').filter(c => c.trim()));
-
                 let tableHtml = '<table><thead><tr>';
                 headers.forEach(h => { tableHtml += `<th>${escapeHtml(h.trim())}</th>`; });
                 tableHtml += '</tr></thead><tbody>';
@@ -878,20 +1064,11 @@
                 tableHtml += '</tbody></table>';
                 return tableHtml;
             });
-
-            // Цитаты
             html = html.replace(/^>\s*(.+)$/gm, '<blockquote>$1</blockquote>');
-
-            // Жирный
             html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-            // Курсив
             html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-            // Списки
             html = html.replace(/^-\s*(.+)$/gm, '<li>$1</li>');
             html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-
             html = html.replace(/\n/g, '<br>');
             return html;
         }
@@ -899,18 +1076,14 @@
         function addMessage(role, content) {
             const div = document.createElement('div');
             div.className = 'message ' + role;
-
             const label = document.createElement('span');
             label.className = 'label';
             label.textContent = role === 'user' ? '👤 Вы' : '🧠 PyAI';
-
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
             bubble.innerHTML = formatMessage(content);
-
             div.appendChild(label);
             div.appendChild(bubble);
-
             chatMessages.insertBefore(div, typing);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -947,7 +1120,6 @@
                     body: JSON.stringify({ username: currentUser, message: text })
                 });
                 const data = await res.json();
-
                 if (data.success) {
                     addMessage('ai', data.response);
                 } else {
@@ -962,6 +1134,9 @@
             }
         }
 
+        // ============================================================
+        // ДОП. ФУНКЦИИ
+        // ============================================================
         async function clearChatHistory() {
             if (!currentUser) return;
             try {
@@ -1000,6 +1175,7 @@
 
         function logout() {
             currentUser = null;
+            isAdmin = false;
             localStorage.removeItem('pyai_user');
             chatMessages.querySelectorAll('.message').forEach(el => el.remove());
             header.style.display = 'none';
@@ -1008,8 +1184,13 @@
             authUsername.value = '';
             authPassword.value = '';
             showAuthMessage('', '');
+            adminPanel.classList.remove('show');
+            adminSidebar.style.display = 'none';
         }
 
+        // ============================================================
+        // ОБРАБОТЧИКИ
+        // ============================================================
         document.getElementById('logoutBtn').addEventListener('click', logout);
         switchBtn.addEventListener('click', switchMode);
         authBtn.addEventListener('click', handleAuth);
@@ -1024,6 +1205,9 @@
             if (e.key === 'Enter') handleAuth();
         });
 
+        // ============================================================
+        // АВТОВХОД
+        // ============================================================
         async function autoLogin() {
             const savedUser = localStorage.getItem('pyai_user');
             if (!savedUser) return;
