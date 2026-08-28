@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 import requests
 import json
 import os
 from datetime import datetime, timedelta
+import time
 
 app = Flask(__name__)
 
@@ -57,12 +58,10 @@ def save_users(users):
         "Content-Type": "application/json"
     }
     try:
-        # Проверяем, что users — это словарь
         if not isinstance(users, dict):
             users = {}
-        
         r = requests.put(url, json=users, headers=headers, timeout=10)
-        print(f"save_users: {r.status_code}, {r.text[:200]}")
+        print(f"save_users: {r.status_code}")
         return r.status_code == 200
     except Exception as e:
         print(f"save_users error: {e}")
@@ -100,12 +99,7 @@ def get_subscription_info(username):
     status = user.get("status", "inactive")
     plan_key = user.get("plan")
     
-    PLANS = {
-        "1": "Неделя",
-        "2": "Месяц",
-        "3": "Год",
-        "4": "Вечная"
-    }
+    PLANS = {"1": "Неделя", "2": "Месяц", "3": "Год", "4": "Вечная"}
     plan_name = PLANS.get(plan_key, "Нет")
     
     end_date = user.get("end_date")
@@ -114,36 +108,18 @@ def get_subscription_info(username):
         days_left = (end - datetime.now()).days
         if days_left < 0:
             days_left = 0
-        return {
-            "status": status,
-            "plan": plan_name,
-            "days_left": days_left
-        }
+        return {"status": status, "plan": plan_name, "days_left": days_left}
     elif status == "active" and not end_date:
-        return {
-            "status": status,
-            "plan": "Вечная",
-            "days_left": "∞"
-        }
+        return {"status": status, "plan": "Вечная", "days_left": "∞"}
     else:
-        return {
-            "status": "inactive",
-            "plan": "Нет",
-            "days_left": 0
-        }
+        return {"status": "inactive", "plan": "Нет", "days_left": 0}
 
 def give_access(username, plan_key):
     users = load_users()
     if username not in users:
         return False
     
-    PLANS = {
-        "1": {"name": "Неделя", "days": 7},
-        "2": {"name": "Месяц", "days": 30},
-        "3": {"name": "Год", "days": 365},
-        "4": {"name": "Вечная", "days": None}
-    }
-    
+    PLANS = {"1": {"name": "Неделя", "days": 7}, "2": {"name": "Месяц", "days": 30}, "3": {"name": "Год", "days": 365}, "4": {"name": "Вечная", "days": None}}
     plan = PLANS.get(plan_key)
     if not plan:
         return False
@@ -154,8 +130,7 @@ def give_access(username, plan_key):
     if plan["days"] is None:
         users[username]["end_date"] = None
     else:
-        end_date = datetime.now() + timedelta(days=plan["days"])
-        users[username]["end_date"] = end_date.isoformat()
+        users[username]["end_date"] = (datetime.now() + timedelta(days=plan["days"])).isoformat()
     
     return save_users(users)
 
@@ -178,11 +153,9 @@ def delete_user(username):
 def list_users():
     users = load_users()
     result = []
+    PLANS = {"1": "Неделя", "2": "Месяц", "3": "Год", "4": "Вечная"}
     for username, data in users.items():
         plan_key = data.get("plan")
-        PLANS = {
-            "1": "Неделя", "2": "Месяц", "3": "Год", "4": "Вечная"
-        }
         plan_name = PLANS.get(plan_key, "Нет")
         result.append({
             "username": username,
@@ -193,42 +166,64 @@ def list_users():
     return result
 
 # ============================================
-# OPENROUTER
+# OPENROUTER С ПОТОКОВОЙ ПЕРЕДАЧЕЙ
 # ============================================
-def ask_ai_with_history(user_id, question):
+def ask_ai_stream(user_id, question):
+    """Отправляет запрос к OpenRouter с потоковой передачей"""
+    history = get_history(user_id)
+    
+    messages = [
+        {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть. Отвечай полезно, структурированно и понятно. Используй маркдаун для форматирования."}
+    ]
+    
+    for msg in history[-10:]:
+        messages.append(msg)
+    
+    messages.append({"role": "user", "content": question})
+    
     try:
-        history = get_history(user_id)
-        
-        messages = [
-            {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть. Отвечай полезно и понятно. Ты можешь играть в игры, викторины и поддерживать диалог. Запоминай, что говорил пользователь ранее."}
-        ]
-        
-        for msg in history[-10:]:
-            messages.append(msg)
-        
-        messages.append({"role": "user", "content": question})
-        
         r = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             json={
                 "model": "openrouter/free",
-                "messages": messages
+                "messages": messages,
+                "stream": True
             },
             headers={
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer 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'
             },
-            timeout=30
+            timeout=60,
+            stream=True
         )
-        r.raise_for_status()
-        response = r.json()['choices'][0]['message']['content']
         
+        full_response = ""
+        for line in r.iter_lines():
+            if line:
+                line = line.decode('utf-8')
+                if line.startswith('data: '):
+                    data = line[6:]
+                    if data == '[DONE]':
+                        break
+                    try:
+                        chunk = json.loads(data)
+                        if 'choices' in chunk and len(chunk['choices']) > 0:
+                            delta = chunk['choices'][0].get('delta', {})
+                            content = delta.get('content', '')
+                            if content:
+                                full_response += content
+                                yield f"data: {json.dumps({'text': content, 'done': False})}\n\n"
+                    except:
+                        pass
+        
+        # Сохраняем в историю
         add_to_history(user_id, "user", question)
-        add_to_history(user_id, "assistant", response)
+        add_to_history(user_id, "assistant", full_response)
         
-        return response
+        yield f"data: {json.dumps({'text': '', 'done': True})}\n\n"
+        
     except Exception as e:
-        return f"⚠️ Ошибка: {str(e)[:200]}"
+        yield f"data: {json.dumps({'error': str(e)[:200], 'done': True})}\n\n"
 
 # ============================================
 # МАРШРУТЫ
@@ -269,11 +264,11 @@ def register_web():
         return jsonify({'success': False, 'error': 'Заполните все поля'})
     
     if len(password) < 4:
-        return jsonify({'success': False, 'error': 'Пароль должен быть не менее 4 символов'})
+        return jsonify({'success': False, 'error': 'Пароль ≥ 4 символов'})
     
     users = load_users()
     if username in users:
-        return jsonify({'success': False, 'error': 'Имя уже занято'})
+        return jsonify({'success': False, 'error': 'Имя занято'})
     
     users[username] = {
         "password": password,
@@ -291,6 +286,7 @@ def register_web():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    """Обычный чат (для обратной совместимости)"""
     data = request.json
     username = data.get('username', '').strip()
     message = data.get('message', '').strip()
@@ -300,11 +296,56 @@ def chat():
     
     status = check_subscription(username)
     if status != "active":
-        return jsonify({'success': False, 'error': 'Подписка неактивна. Напишите @cursed_pharaon для продления'})
+        return jsonify({'success': False, 'error': 'Подписка неактивна'})
     
     user_id = f"web_{username}"
-    response = ask_ai_with_history(user_id, message)
+    response = ask_ai_stream_sync(user_id, message)
     return jsonify({'success': True, 'response': response})
+
+@app.route('/chat/stream', methods=['POST'])
+def chat_stream():
+    """Потоковый чат (с размышлением и построчной загрузкой)"""
+    data = request.json
+    username = data.get('username', '').strip()
+    message = data.get('message', '').strip()
+    
+    if not username or not message:
+        return jsonify({'success': False, 'error': 'Введите имя и сообщение'}), 400
+    
+    status = check_subscription(username)
+    if status != "active":
+        return jsonify({'success': False, 'error': 'Подписка неактивна'}), 403
+    
+    user_id = f"web_{username}"
+    return Response(ask_ai_stream(user_id, message), mimetype='text/event-stream')
+
+def ask_ai_stream_sync(user_id, question):
+    """Синхронная версия для обычного чата"""
+    try:
+        history = get_history(user_id)
+        messages = [
+            {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть. Отвечай полезно и структурированно."}
+        ]
+        for msg in history[-10:]:
+            messages.append(msg)
+        messages.append({"role": "user", "content": question})
+        
+        r = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            json={"model": "openrouter/free", "messages": messages},
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer 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'
+            },
+            timeout=30
+        )
+        r.raise_for_status()
+        response = r.json()['choices'][0]['message']['content']
+        add_to_history(user_id, "user", question)
+        add_to_history(user_id, "assistant", response)
+        return response
+    except Exception as e:
+        return f"⚠️ Ошибка: {str(e)[:200]}"
 
 @app.route('/clear_history', methods=['POST'])
 def clear_history_route():
@@ -312,26 +353,23 @@ def clear_history_route():
     username = data.get('username', '').strip()
     if not username:
         return jsonify({'success': False, 'error': 'Имя не указано'})
-    
     user_id = f"web_{username}"
     clear_history(user_id)
     return jsonify({'success': True, 'message': 'История очищена'})
 
 # ============================================
-# АДМИН-МАРШРУТЫ (только для cursed_dev)
+# АДМИН-МАРШРУТЫ
 # ============================================
 @app.route('/admin/listusers')
 def admin_list_users():
     users = list_users()
     if not users:
         return jsonify({'success': True, 'users': '📭 Нет пользователей'})
-    
     text = ""
     for user in users:
-        status_emoji = "✅" if user["status"] == "active" else "❌"
+        emoji = "✅" if user["status"] == "active" else "❌"
         end_str = f"до {user['end_date'][:10]}" if user["end_date"] else "бессрочно" if user["status"] == "active" else "-"
-        text += f"{status_emoji} {user['username']} | {user['plan']} | {end_str}\n"
-    
+        text += f"{emoji} {user['username']} | {user['plan']} | {end_str}\n"
     return jsonify({'success': True, 'users': text})
 
 @app.route('/admin/giveaccess', methods=['POST'])
@@ -339,55 +377,39 @@ def admin_give_access():
     data = request.json
     username = data.get('username', '').strip()
     plan = data.get('plan', '').strip()
-    
-    if not username or not plan:
+    if not username or not plan or plan not in ['1','2','3','4']:
         return jsonify({'success': False, 'error': 'Укажите имя и план (1-4)'})
-    
-    if plan not in ['1', '2', '3', '4']:
-        return jsonify({'success': False, 'error': 'План должен быть 1-4'})
-    
     if give_access(username, plan):
         plan_names = {"1": "Неделя", "2": "Месяц", "3": "Год", "4": "Вечная"}
         return jsonify({'success': True, 'message': f'✅ {username} получил доступ на {plan_names[plan]}'})
-    else:
-        return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
+    return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
 
 @app.route('/admin/removeaccess', methods=['POST'])
 def admin_remove_access():
     data = request.json
     username = data.get('username', '').strip()
-    
     if not username:
         return jsonify({'success': False, 'error': 'Укажите имя'})
-    
     if remove_access(username):
         return jsonify({'success': True, 'message': f'✅ Доступ отключён для {username}'})
-    else:
-        return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
+    return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
 
 @app.route('/admin/deleteuser', methods=['POST'])
 def admin_delete_user():
     data = request.json
     username = data.get('username', '').strip()
-    
     if not username:
         return jsonify({'success': False, 'error': 'Укажите имя'})
-    
     if delete_user(username):
         return jsonify({'success': True, 'message': f'✅ Пользователь {username} удалён'})
-    else:
-        return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
+    return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
 
 @app.route('/admin/stats')
 def admin_stats():
     users = list_users()
     total = len(users)
     active = sum(1 for u in users if u["status"] == "active")
-    
-    return jsonify({
-        'success': True,
-        'stats': f'👥 Всего: {total}\n✅ Активных: {active}\n❌ Неактивных: {total - active}'
-    })
+    return jsonify({'success': True, 'stats': f'👥 Всего: {total}\n✅ Активных: {active}\n❌ Неактивных: {total - active}'})
 
 @app.route('/ping')
 def ping():
