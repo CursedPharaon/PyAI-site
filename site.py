@@ -11,9 +11,10 @@ app = Flask(__name__)
 # ============================================
 JSONBIN_KEY = "$2a$10$3T6Ssc3MDy8btFzOD4PTjOzciiAlCszOrB4zJDiorULg2BRrdPWRS"
 BIN_ID = "6a90a8efda38895dfe19be69"
+ADMIN_NAME = "cursed_dev"
 
 # ============================================
-# ПАМЯТЬ: ХРАНИМ ИСТОРИЮ ДИАЛОГОВ ДЛЯ САЙТА
+# ПАМЯТЬ
 # ============================================
 chat_history = {}
 MAX_HISTORY = 20
@@ -56,8 +57,12 @@ def save_users(users):
         "Content-Type": "application/json"
     }
     try:
+        # Проверяем, что users — это словарь
+        if not isinstance(users, dict):
+            users = {}
+        
         r = requests.put(url, json=users, headers=headers, timeout=10)
-        print(f"save_users: {r.status_code}")
+        print(f"save_users: {r.status_code}, {r.text[:200]}")
         return r.status_code == 200
     except Exception as e:
         print(f"save_users error: {e}")
@@ -127,8 +132,68 @@ def get_subscription_info(username):
             "days_left": 0
         }
 
+def give_access(username, plan_key):
+    users = load_users()
+    if username not in users:
+        return False
+    
+    PLANS = {
+        "1": {"name": "Неделя", "days": 7},
+        "2": {"name": "Месяц", "days": 30},
+        "3": {"name": "Год", "days": 365},
+        "4": {"name": "Вечная", "days": None}
+    }
+    
+    plan = PLANS.get(plan_key)
+    if not plan:
+        return False
+    
+    users[username]["plan"] = plan_key
+    users[username]["status"] = "active"
+    
+    if plan["days"] is None:
+        users[username]["end_date"] = None
+    else:
+        end_date = datetime.now() + timedelta(days=plan["days"])
+        users[username]["end_date"] = end_date.isoformat()
+    
+    return save_users(users)
+
+def remove_access(username):
+    users = load_users()
+    if username not in users:
+        return False
+    users[username]["status"] = "inactive"
+    users[username]["plan"] = None
+    users[username]["end_date"] = None
+    return save_users(users)
+
+def delete_user(username):
+    users = load_users()
+    if username not in users:
+        return False
+    del users[username]
+    return save_users(users)
+
+def list_users():
+    users = load_users()
+    result = []
+    for username, data in users.items():
+        plan_key = data.get("plan")
+        PLANS = {
+            "1": "Неделя", "2": "Месяц", "3": "Год", "4": "Вечная"
+        }
+        plan_name = PLANS.get(plan_key, "Нет")
+        result.append({
+            "username": username,
+            "status": data.get("status", "inactive"),
+            "plan": plan_name,
+            "end_date": data.get("end_date")
+        })
+    return result
+
 # ============================================
-# OPENROUTER С ПАМЯТЬЮ
+# OPENROUTER
 # ============================================
 def ask_ai_with_history(user_id, question):
     try:
@@ -237,7 +302,6 @@ def chat():
     if status != "active":
         return jsonify({'success': False, 'error': 'Подписка неактивна. Напишите @cursed_pharaon для продления'})
     
-    # Используем username как ID для памяти на сайте
     user_id = f"web_{username}"
     response = ask_ai_with_history(user_id, message)
     return jsonify({'success': True, 'response': response})
@@ -252,6 +316,78 @@ def clear_history_route():
     user_id = f"web_{username}"
     clear_history(user_id)
     return jsonify({'success': True, 'message': 'История очищена'})
+
+# ============================================
+# АДМИН-МАРШРУТЫ (только для cursed_dev)
+# ============================================
+@app.route('/admin/listusers')
+def admin_list_users():
+    users = list_users()
+    if not users:
+        return jsonify({'success': True, 'users': '📭 Нет пользователей'})
+    
+    text = ""
+    for user in users:
+        status_emoji = "✅" if user["status"] == "active" else "❌"
+        end_str = f"до {user['end_date'][:10]}" if user["end_date"] else "бессрочно" if user["status"] == "active" else "-"
+        text += f"{status_emoji} {user['username']} | {user['plan']} | {end_str}\n"
+    
+    return jsonify({'success': True, 'users': text})
+
+@app.route('/admin/giveaccess', methods=['POST'])
+def admin_give_access():
+    data = request.json
+    username = data.get('username', '').strip()
+    plan = data.get('plan', '').strip()
+    
+    if not username or not plan:
+        return jsonify({'success': False, 'error': 'Укажите имя и план (1-4)'})
+    
+    if plan not in ['1', '2', '3', '4']:
+        return jsonify({'success': False, 'error': 'План должен быть 1-4'})
+    
+    if give_access(username, plan):
+        plan_names = {"1": "Неделя", "2": "Месяц", "3": "Год", "4": "Вечная"}
+        return jsonify({'success': True, 'message': f'✅ {username} получил доступ на {plan_names[plan]}'})
+    else:
+        return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
+
+@app.route('/admin/removeaccess', methods=['POST'])
+def admin_remove_access():
+    data = request.json
+    username = data.get('username', '').strip()
+    
+    if not username:
+        return jsonify({'success': False, 'error': 'Укажите имя'})
+    
+    if remove_access(username):
+        return jsonify({'success': True, 'message': f'✅ Доступ отключён для {username}'})
+    else:
+        return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
+
+@app.route('/admin/deleteuser', methods=['POST'])
+def admin_delete_user():
+    data = request.json
+    username = data.get('username', '').strip()
+    
+    if not username:
+        return jsonify({'success': False, 'error': 'Укажите имя'})
+    
+    if delete_user(username):
+        return jsonify({'success': True, 'message': f'✅ Пользователь {username} удалён'})
+    else:
+        return jsonify({'success': False, 'error': '❌ Пользователь не найден'})
+
+@app.route('/admin/stats')
+def admin_stats():
+    users = list_users()
+    total = len(users)
+    active = sum(1 for u in users if u["status"] == "active")
+    
+    return jsonify({
+        'success': True,
+        'stats': f'👥 Всего: {total}\n✅ Активных: {active}\n❌ Неактивных: {total - active}'
+    })
 
 @app.route('/ping')
 def ping():
