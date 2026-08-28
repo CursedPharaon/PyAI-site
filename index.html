@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -5,224 +6,909 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PyAI — Нейросеть</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body {
-            min-height: 100vh;
-            background: radial-gradient(circle at 30% 40%, #1a1f35, #07090f);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+        /* ===== ГЛОБАЛЬНЫЕ СТИЛИ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        .card {
-            width: 100%;
-            max-width: 500px;
-            background: rgba(12, 16, 35, 0.8);
-            backdrop-filter: blur(24px);
-            border-radius: 40px;
-            padding: 30px;
-            border: 1px solid rgba(0, 180, 255, 0.2);
-        }
-        .logo { text-align: center; margin-bottom: 20px; }
-        .logo-icon {
-            width: 64px; height: 64px;
-            background: linear-gradient(135deg, #0088ff, #4400ff);
-            border-radius: 20px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 30px; font-weight: 800; color: white;
-            margin: 0 auto 10px;
-        }
-        .logo h1 { font-size: 28px; background: linear-gradient(90deg, #00ccff, #7766ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .logo p { color: #667799; font-size: 13px; }
-        .hidden { display: none !important; }
 
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; color: #8899bb; font-size: 13px; margin-bottom: 4px; }
-        .form-group input {
-            width: 100%; padding: 12px 16px; border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(0,0,0,0.35);
-            color: #e0e8ff; font-size: 14px; outline: none;
+        body {
+            background: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        .form-group input:focus { border-color: rgba(0,180,255,0.4); }
+
+        /* ===== ШАПКА ===== */
+        .header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #0066ff, #4400ff);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .logo h1 span {
+            color: #0066ff;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .user-info strong {
+            color: #1a1a2e;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
 
         .btn {
-            width: 100%; padding: 14px; border-radius: 30px; border: none;
-            background: linear-gradient(135deg, #0088ff, #5500ff);
-            color: white; font-weight: 600; font-size: 15px; cursor: pointer;
-        }
-        .btn:hover { transform: scale(1.02); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .switch { text-align: center; margin-top: 12px; color: #667799; font-size: 13px; cursor: pointer; }
-        .switch span { color: #88ddff; text-decoration: underline; }
-
-        .message { padding: 12px; border-radius: 12px; text-align: center; font-size: 13px; margin-top: 10px; }
-        .message.success { background: rgba(0,255,150,0.08); color: #66ffaa; }
-        .message.error { background: rgba(255,50,50,0.08); color: #ff6666; }
-
-        .chat-box {
-            background: rgba(0,0,0,0.3);
-            border-radius: 16px;
-            padding: 14px;
-            height: 280px;
-            overflow-y: auto;
-            margin-bottom: 12px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .chat-box::-webkit-scrollbar { width: 4px; }
-        .chat-box::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.3); border-radius: 10px; }
-
-        .msg { margin-bottom: 8px; display: flex; flex-direction: column; }
-        .msg.user { align-items: flex-end; }
-        .msg.ai { align-items: flex-start; }
-        .msg .bubble {
-            max-width: 80%;
-            padding: 8px 14px;
-            border-radius: 14px;
-            font-size: 13px;
-            line-height: 1.4;
-            word-wrap: break-word;
-        }
-        .msg.user .bubble { background: linear-gradient(135deg, #0088ff, #5500ff); color: white; border-bottom-right-radius: 4px; }
-        .msg.ai .bubble { background: rgba(255,255,255,0.07); color: #e0e8ff; border-bottom-left-radius: 4px; }
-        .msg .label { font-size: 10px; color: #667799; margin-bottom: 2px; }
-
-        .input-area { display: flex; gap: 8px; }
-        .input-area input {
-            flex: 1;
-            padding: 10px 14px;
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(0,0,0,0.35);
-            color: #e0e8ff;
-            font-size: 13px;
-            outline: none;
-        }
-        .input-area input:focus { border-color: rgba(0,180,255,0.4); }
-        .input-area button {
-            padding: 10px 20px;
-            border-radius: 30px;
+            padding: 6px 16px;
+            border-radius: 8px;
             border: none;
-            background: linear-gradient(135deg, #0088ff, #5500ff);
-            color: white;
+            font-size: 13px;
             font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: #0066ff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0052cc;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #dee2e6;
+            color: #495057;
+        }
+
+        .btn-outline:hover {
+            background: #f1f3f5;
+        }
+
+        .btn-danger-outline {
+            background: transparent;
+            border: 1px solid #f8d7da;
+            color: #dc3545;
+        }
+
+        .btn-danger-outline:hover {
+            background: #f8d7da;
+        }
+
+        /* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ===== БОКОВАЯ ПАНЕЛЬ (информация) ===== */
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e9ecef;
+        }
+
+        .sidebar-card h3 {
+            font-size: 13px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-card p {
+            font-size: 14px;
+            color: #1a1a2e;
+        }
+
+        .sidebar-card .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .sidebar-card .label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .quick-actions button {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            background: white;
+            color: #1a1a2e;
             font-size: 13px;
             cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
         }
 
-        .status-box {
-            padding: 10px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            text-align: center;
+        .quick-actions button:hover {
+            background: #f1f3f5;
+            border-color: #dee2e6;
+        }
+
+        .quick-actions button .icon {
+            margin-right: 8px;
+        }
+
+        /* ===== ОСНОВНАЯ ОБЛАСТЬ (чат) ===== */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            min-width: 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            scroll-behavior: smooth;
+        }
+
+        /* ===== СООБЩЕНИЯ ===== */
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+        }
+
+        .message.user {
+            align-items: flex-end;
+            margin-left: auto;
+        }
+
+        .message.ai {
+            align-items: flex-start;
+            margin-right: auto;
+        }
+
+        .message .bubble {
+            padding: 12px 18px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .message.user .bubble {
+            background: #0066ff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .bubble {
+            background: #f1f3f5;
+            color: #1a1a2e;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message .label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 4px;
+            padding: 0 4px;
+        }
+
+        /* ===== ОФОРМЛЕНИЕ КОДА В СООБЩЕНИЯХ ===== */
+        .message .bubble pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 8px 0;
+            position: relative;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 13px;
+            line-height: 1.5;
+            max-width: 100%;
         }
-        .status-box.active { background: rgba(0,255,150,0.08); color: #66ffaa; }
-        .status-box.inactive { background: rgba(255,200,0,0.08); color: #ccaa66; }
 
+        .message .bubble pre code {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #cdd6f4;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .copy-btn.copied {
+            background: #a6e3a1;
+            color: #1a1a2e;
+        }
+
+        /* ===== ТАБЛИЦЫ ===== */
+        .message .bubble table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .message .bubble th,
+        .message .bubble td {
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .message .bubble th {
+            background: #f1f3f5;
+            font-weight: 600;
+        }
+
+        .message .bubble tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        /* ===== ЦИТАТЫ ===== */
+        .message .bubble blockquote {
+            border-left: 4px solid #0066ff;
+            padding: 8px 16px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+            color: #495057;
+        }
+
+        /* ===== СПИСКИ ===== */
+        .message .bubble ul,
+        .message .bubble ol {
+            padding-left: 24px;
+            margin: 8px 0;
+        }
+
+        .message .bubble li {
+            margin: 4px 0;
+        }
+
+        /* ===== ВВОД СООБЩЕНИЯ ===== */
+        .chat-input {
+            padding: 16px 24px;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+            display: flex;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+            background: white;
+        }
+
+        .chat-input input:focus {
+            border-color: #0066ff;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .chat-input button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background: #0066ff;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .chat-input button:hover {
+            background: #0052cc;
+        }
+
+        .chat-input button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== АНИМАЦИЯ ПЕЧАТИ ===== */
         .typing {
             display: none;
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.05);
+            padding: 8px 16px;
+            background: #f1f3f5;
             border-radius: 30px;
             width: fit-content;
-            margin-top: 4px;
+            margin: 4px 0;
         }
+
         .typing span {
             display: inline-block;
-            width: 6px; height: 6px;
-            background: #6699ff;
+            width: 8px;
+            height: 8px;
+            background: #6c757d;
             border-radius: 50%;
             margin: 0 2px;
             animation: typing 1.4s infinite both;
         }
+
         .typing span:nth-child(2) { animation-delay: 0.2s; }
         .typing span:nth-child(3) { animation-delay: 0.4s; }
+
         @keyframes typing {
             0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
             40% { transform: scale(1); opacity: 1; }
         }
+
+        /* ===== АВТОРИЗАЦИЯ ===== */
+        .auth-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e9ecef;
+        }
+
+        .auth-card .logo {
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-card h2 {
+            font-size: 22px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .auth-card p {
+            color: #6c757d;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-card .form-group {
+            margin-bottom: 16px;
+        }
+
+        .auth-card .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+
+        .auth-card .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .auth-card .form-group input:focus {
+            border-color: #0066ff;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .auth-card .btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+        }
+
+        .auth-card .switch {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #6c757d;
+            cursor: pointer;
+        }
+
+        .auth-card .switch span {
+            color: #0066ff;
+            font-weight: 600;
+        }
+
+        .auth-card .switch span:hover {
+            text-decoration: underline;
+        }
+
+        .auth-card .message {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 12px;
+            text-align: center;
+            display: none;
+        }
+
+        .auth-card .message.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .auth-card .message.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .header {
+                padding: 8px 16px;
+            }
+
+            .logo h1 {
+                font-size: 16px;
+            }
+
+            .chat-messages {
+                padding: 12px 16px;
+            }
+
+            .chat-input {
+                padding: 12px 16px;
+            }
+
+            .auth-card {
+                padding: 24px;
+            }
+        }
+
+        /* ===== СКРОЛЛ ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #dee2e6;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ced4da;
+        }
     </style>
 </head>
 <body>
-    <div class="card" id="app">
+
+    <!-- ===== ШАПКА ===== -->
+    <header class="header" id="header" style="display:none;">
         <div class="logo">
             <div class="logo-icon">Py</div>
-            <h1>PyAI</h1>
-            <p>Нейросеть нового поколения</p>
+            <h1>Py<span>AI</span></h1>
         </div>
+        <div class="header-right">
+            <span class="user-info" id="userInfo">👤 <strong id="usernameDisplay"></strong></span>
+            <span class="status-badge" id="statusBadge">🔴 Неактивна</span>
+            <button class="btn btn-outline" id="logoutBtn">🚪 Выйти</button>
+        </div>
+    </header>
 
-        <!-- Форма входа/регистрации -->
-        <div id="authForm">
-            <div id="authTitle" style="text-align:center;color:#8899bb;font-size:16px;margin-bottom:16px;">Вход</div>
-            <div class="form-group">
-                <label>👤 Имя</label>
-                <input type="text" id="username" placeholder="Введите имя" />
+    <!-- ===== ОСНОВНАЯ ОБЛАСТЬ ===== -->
+    <div class="main-container" id="mainContainer" style="display:none;">
+
+        <!-- Боковая панель -->
+        <aside class="sidebar">
+            <div class="sidebar-card">
+                <h3>📊 Подписка</h3>
+                <p id="sidebarPlan">Нет</p>
+                <p id="sidebarDays" style="font-size:14px;color:#6c757d;"></p>
             </div>
-            <div class="form-group">
-                <label>🔑 Пароль</label>
-                <input type="password" id="password" placeholder="Введите пароль" />
+
+            <div class="sidebar-card">
+                <h3>📌 Быстрые действия</h3>
+                <div class="quick-actions">
+                    <button onclick="clearChatHistory()"><span class="icon">🧹</span> Очистить память</button>
+                    <button onclick="exportChat()"><span class="icon">📥</span> Экспорт чата</button>
+                </div>
             </div>
-            <button class="btn" id="authBtn">Войти</button>
-            <div class="switch" id="switchBtn">Нет аккаунта? <span>Зарегистрироваться</span></div>
-            <div id="authMessage" class="message"></div>
-        </div>
+
+            <div class="sidebar-card">
+                <h3>💡 Советы</h3>
+                <p style="font-size:13px;color:#6c757d;line-height:1.6;">
+                    • Пиши как обычному собеседнику<br>
+                    • Запрашивай код — я оформлю его красиво<br>
+                    • Могу помочь с таблицами и данными
+                </p>
+            </div>
+        </aside>
 
         <!-- Чат -->
-        <div id="chatArea" class="hidden">
-            <div class="status-box" id="statusBox">🔄 Загрузка...</div>
-            <div class="chat-box" id="chatBox">
-                <div class="msg ai">
+        <div class="chat-area">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
                     <span class="label">🧠 PyAI</span>
-                    <div class="bubble">Привет! Я PyAI. Задавай любые вопросы!</div>
+                    <div class="bubble">Привет! Я PyAI. Задавай любые вопросы — я помогу с кодом, таблицами, анализом и не только!</div>
                 </div>
                 <div class="typing" id="typing"><span></span><span></span><span></span></div>
             </div>
-            <div class="input-area">
+
+            <div class="chat-input">
                 <input type="text" id="messageInput" placeholder="Спроси у PyAI..." />
-                <button id="sendBtn">➤</button>
+                <button id="sendBtn">Отправить</button>
             </div>
         </div>
     </div>
 
-    <script>
-        let currentUser = null;
+    <!-- ===== АВТОРИЗАЦИЯ ===== -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-card">
+            <div class="logo">
+                <div class="logo-icon">Py</div>
+                <h1 style="font-size:24px;">Py<span style="color:#0066ff;">AI</span></h1>
+            </div>
+            <h2 id="authTitle">Вход</h2>
+            <p id="authSubtitle">Войдите в свой аккаунт, чтобы продолжить</p>
 
-        const authForm = document.getElementById('authForm');
-        const chatArea = document.getElementById('chatArea');
+            <div class="form-group">
+                <label>👤 Имя пользователя</label>
+                <input type="text" id="authUsername" placeholder="Введите имя" />
+            </div>
+            <div class="form-group">
+                <label>🔑 Пароль</label>
+                <input type="password" id="authPassword" placeholder="Введите пароль" />
+            </div>
+
+            <button class="btn btn-primary" id="authBtn">Войти</button>
+            <div class="switch" id="switchBtn">Нет аккаунта? <span>Зарегистрироваться</span></div>
+            <div class="message" id="authMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // СОСТОЯНИЕ
+        // ============================================================
+        let currentUser = null;
+        let isLogin = true;
+        let chatHistory = [];
+
+        // ============================================================
+        // DOM ЭЛЕМЕНТЫ
+        // ============================================================
+        const authContainer = document.getElementById('authContainer');
         const authTitle = document.getElementById('authTitle');
+        const authSubtitle = document.getElementById('authSubtitle');
+        const authUsername = document.getElementById('authUsername');
+        const authPassword = document.getElementById('authPassword');
         const authBtn = document.getElementById('authBtn');
-        const switchBtn = document.getElementById('switchBtn');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
         const authMessage = document.getElementById('authMessage');
-        const statusBox = document.getElementById('statusBox');
-        const chatBox = document.getElementById('chatBox');
+        const switchBtn = document.getElementById('switchBtn');
+
+        const header = document.getElementById('header');
+        const mainContainer = document.getElementById('mainContainer');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const statusBadge = document.getElementById('statusBadge');
+        const userInfo = document.getElementById('userInfo');
+
+        const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const typing = document.getElementById('typing');
 
-        let isLogin = true;
+        const sidebarPlan = document.getElementById('sidebarPlan');
+        const sidebarDays = document.getElementById('sidebarDays');
 
-        function showMessage(text, type) {
+        // ============================================================
+        // ФУНКЦИИ АВТОРИЗАЦИИ
+        // ============================================================
+        function showAuthMessage(text, type) {
             authMessage.textContent = text;
             authMessage.className = 'message ' + type;
         }
 
-        function addMessage(role, text) {
+        function switchMode() {
+            isLogin = !isLogin;
+            if (isLogin) {
+                authTitle.textContent = 'Вход';
+                authSubtitle.textContent = 'Войдите в свой аккаунт, чтобы продолжить';
+                authBtn.textContent = 'Войти';
+                switchBtn.innerHTML = 'Нет аккаунта? <span>Зарегистрироваться</span>';
+            } else {
+                authTitle.textContent = 'Регистрация';
+                authSubtitle.textContent = 'Создайте новый аккаунт';
+                authBtn.textContent = 'Зарегистрироваться';
+                switchBtn.innerHTML = 'Уже есть аккаунт? <span>Войти</span>';
+            }
+            showAuthMessage('', '');
+        }
+
+        async function handleAuth() {
+            const username = authUsername.value.trim();
+            const password = authPassword.value.trim();
+
+            if (!username || !password) {
+                showAuthMessage('Заполните все поля', 'error');
+                return;
+            }
+
+            if (!isLogin && password.length < 4) {
+                showAuthMessage('Пароль должен быть не менее 4 символов', 'error');
+                return;
+            }
+
+            authBtn.disabled = true;
+            authBtn.textContent = '⏳...';
+
+            try {
+                const endpoint = isLogin ? '/login' : '/register_web';
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (isLogin) {
+                        // Вход
+                        currentUser = username;
+                        localStorage.setItem('pyai_user', username);
+                        showApp(data);
+                    } else {
+                        // Регистрация
+                        showAuthMessage('✅ ' + data.message, 'success');
+                        authUsername.value = '';
+                        authPassword.value = '';
+                        setTimeout(() => {
+                            switchMode();
+                        }, 1500);
+                    }
+                } else {
+                    showAuthMessage('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAuthMessage('❌ Ошибка: ' + error.message, 'error');
+            }
+
+            authBtn.disabled = false;
+            authBtn.textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+        }
+
+        // ============================================================
+        // ОТОБРАЖЕНИЕ ПРИЛОЖЕНИЯ
+        // ============================================================
+        function showApp(data) {
+            authContainer.style.display = 'none';
+            header.style.display = 'flex';
+            mainContainer.style.display = 'flex';
+
+            usernameDisplay.textContent = data.username;
+
+            if (data.status === 'active') {
+                statusBadge.textContent = '🟢 Активна';
+                statusBadge.className = 'status-badge active';
+                sidebarPlan.textContent = '📋 ' + data.plan;
+                sidebarDays.textContent = data.days_left === '∞' ? '♾️ Вечная' : '⏳ ' + data.days_left + ' дн.';
+            } else {
+                statusBadge.textContent = '🔴 Неактивна';
+                statusBadge.className = 'status-badge inactive';
+                sidebarPlan.textContent = '❌ Нет подписки';
+                sidebarDays.textContent = 'Напишите @cursed_pharaon для продления';
+            }
+        }
+
+        // ============================================================
+        // РАБОТА С ЧАТОМ
+        // ============================================================
+        function addMessage(role, content) {
             const div = document.createElement('div');
-            div.className = 'msg ' + role;
+            div.className = 'message ' + role;
+
             const label = document.createElement('span');
             label.className = 'label';
             label.textContent = role === 'user' ? '👤 Вы' : '🧠 PyAI';
+
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
-            bubble.textContent = text;
+
+            // Обрабатываем содержимое (код, таблицы, цитаты)
+            bubble.innerHTML = formatMessage(content);
+
             div.appendChild(label);
             div.appendChild(bubble);
-            chatBox.insertBefore(div, typing);
-            chatBox.scrollTop = chatBox.scrollHeight;
+
+            chatMessages.insertBefore(div, typing);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Добавляем обработчики для кнопок копирования
+            bubble.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const code = this.parentElement.querySelector('code');
+                    if (code) {
+                        navigator.clipboard.writeText(code.textContent).then(() => {
+                            this.textContent = '✅ Скопировано!';
+                            this.classList.add('copied');
+                            setTimeout(() => {
+                                this.textContent = '📋 Копировать';
+                                this.classList.remove('copied');
+                            }, 2000);
+                        });
+                    }
+                });
+            });
+        }
+
+        function formatMessage(text) {
+            // Экранируем HTML
+            let html = text;
+
+            // Обрабатываем блоки кода ```language ... ```
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+                return `<pre><code>${escapeHtml(code.trim())}</code><button class="copy-btn">📋 Копировать</button></pre>`;
+            });
+
+            // Обрабатываем таблицы
+            html = html.replace(/\|(.+)\|\n\|[-: |]+\|\n((?:\|.+\|\n?)+)/g, function(match, header, rows) {
+                const headers = header.split('|').filter(h => h.trim());
+                const rowsData = rows.trim().split('\n').map(row => row.split('|').filter(c => c.trim()));
+
+                let tableHtml = '<table><thead><tr>';
+                headers.forEach(h => {
+                    tableHtml += `<th>${escapeHtml(h.trim())}</th>`;
+                });
+                tableHtml += '</tr></thead><tbody>';
+                rowsData.forEach(row => {
+                    tableHtml += '<tr>';
+                    row.forEach(cell => {
+                        tableHtml += `<td>${escapeHtml(cell.trim())}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                });
+                tableHtml += '</tbody></table>';
+                return tableHtml;
+            });
+
+            // Обрабатываем цитаты > текст
+            html = html.replace(/^>\s*(.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // Обрабатываем жирный текст **текст**
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            // Обрабатываем курсив *текст*
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Обрабатываем списки
+            html = html.replace(/^-\s*(.+)$/gm, '<li>$1</li>');
+            html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+
+            // Обрабатываем переносы строк
+            html = html.replace(/\n/g, '<br>');
+
+            return html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         async function sendMessage() {
@@ -241,140 +927,132 @@
                     body: JSON.stringify({ username: currentUser, message: text })
                 });
                 const data = await res.json();
+
                 if (data.success) {
                     addMessage('ai', data.response);
                 } else {
-                    addMessage('ai', '❌ ' + data.error);
+                    addMessage('ai', '❌ ' + (data.error || 'Ошибка'));
                 }
-            } catch (e) {
-                addMessage('ai', '❌ Ошибка: ' + e.message);
+            } catch (error) {
+                addMessage('ai', '❌ Ошибка: ' + error.message);
             } finally {
                 typing.style.display = 'none';
                 sendBtn.disabled = false;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
             }
         }
 
-        async function login() {
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
-
-            if (!username || !password) {
-                showMessage('Заполните все поля', 'error');
-                return;
+        // ============================================================
+        // ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================
+        async function clearChatHistory() {
+            if (!currentUser) return;
+            try {
+                const res = await fetch('/clear_history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    addMessage('ai', '🧹 История диалога очищена!');
+                }
+            } catch (e) {
+                console.error(e);
             }
+        }
 
-            authBtn.disabled = true;
-            authBtn.textContent = '⏳...';
+        function exportChat() {
+            const messages = chatMessages.querySelectorAll('.message');
+            let text = 'PyAI — История чата\n';
+            text += '='.repeat(40) + '\n\n';
+            messages.forEach(msg => {
+                const label = msg.querySelector('.label');
+                const bubble = msg.querySelector('.bubble');
+                if (label && bubble) {
+                    text += label.textContent + '\n';
+                    text += bubble.textContent + '\n\n';
+                }
+            });
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chat_${new Date().toISOString().slice(0,10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================================
+        // ВЫХОД
+        // ============================================================
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('pyai_user');
+            chatMessages.querySelectorAll('.message').forEach(el => el.remove());
+            header.style.display = 'none';
+            mainContainer.style.display = 'none';
+            authContainer.style.display = 'flex';
+            authUsername.value = '';
+            authPassword.value = '';
+            showAuthMessage('', '');
+        }
+
+        // ============================================================
+        // ОБРАБОТЧИКИ СОБЫТИЙ
+        // ============================================================
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        switchBtn.addEventListener('click', switchMode);
+
+        authBtn.addEventListener('click', handleAuth);
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        authUsername.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleAuth();
+        });
+        authPassword.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleAuth();
+        });
+
+        // ============================================================
+        // АВТОМАТИЧЕСКИЙ ВХОД (сохранение аккаунта)
+        // ============================================================
+        async function autoLogin() {
+            const savedUser = localStorage.getItem('pyai_user');
+            if (!savedUser) return;
 
             try {
                 const res = await fetch('/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username: savedUser, password: '' })
                 });
                 const data = await res.json();
 
                 if (data.success) {
-                    currentUser = username;
-                    authForm.classList.add('hidden');
-                    chatArea.classList.remove('hidden');
-                    
-                    if (data.status === 'active') {
-                        statusBox.className = 'status-box active';
-                        statusBox.textContent = `✅ Активна | ${data.plan} | ${data.days_left === '∞' ? '♾️ Вечная' : data.days_left + ' дн.'}`;
-                    } else {
-                        statusBox.className = 'status-box inactive';
-                        statusBox.textContent = '❌ Подписка неактивна. Напишите @cursed_pharaon для продления';
-                    }
+                    currentUser = savedUser;
+                    showApp(data);
+                    authContainer.style.display = 'none';
+                    header.style.display = 'flex';
+                    mainContainer.style.display = 'flex';
                 } else {
-                    showMessage('❌ ' + data.error, 'error');
+                    localStorage.removeItem('pyai_user');
                 }
             } catch (e) {
-                showMessage('❌ Ошибка: ' + e.message, 'error');
-            } finally {
-                authBtn.disabled = false;
-                authBtn.textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
+                localStorage.removeItem('pyai_user');
             }
         }
 
-        async function register() {
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
-
-            if (!username || !password) {
-                showMessage('Заполните все поля', 'error');
-                return;
-            }
-
-            if (password.length < 4) {
-                showMessage('Пароль должен быть не менее 4 символов', 'error');
-                return;
-            }
-
-            authBtn.disabled = true;
-            authBtn.textContent = '⏳...';
-
-            try {
-                const res = await fetch('/register_web', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    showMessage('✅ ' + data.message, 'success');
-                    usernameInput.value = '';
-                    passwordInput.value = '';
-                    isLogin = true;
-                    authTitle.textContent = 'Вход';
-                    authBtn.textContent = 'Войти';
-                    switchBtn.innerHTML = 'Нет аккаунта? <span>Зарегистрироваться</span>';
-                } else {
-                    showMessage('❌ ' + data.error, 'error');
-                }
-            } catch (e) {
-                showMessage('❌ Ошибка: ' + e.message, 'error');
-            } finally {
-                authBtn.disabled = false;
-                authBtn.textContent = isLogin ? 'Войти' : 'Зарегистрироваться';
-            }
-        }
-
-        switchBtn.addEventListener('click', function() {
-            isLogin = !isLogin;
-            if (isLogin) {
-                authTitle.textContent = 'Вход';
-                authBtn.textContent = 'Войти';
-                switchBtn.innerHTML = 'Нет аккаунта? <span>Зарегистрироваться</span>';
-                showMessage('', '');
-            } else {
-                authTitle.textContent = 'Регистрация';
-                authBtn.textContent = 'Зарегистрироваться';
-                switchBtn.innerHTML = 'Уже есть аккаунт? <span>Войти</span>';
-                showMessage('', '');
-            }
-        });
-
-        authBtn.addEventListener('click', function() {
-            if (isLogin) {
-                login();
-            } else {
-                register();
-            }
-        });
-
-        sendBtn.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        usernameInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') authBtn.click();
-        });
-        passwordInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') authBtn.click();
-        });
+        // ============================================================
+        // ЗАПУСК
+        // ============================================================
+        autoLogin();
     </script>
 </body>
 </html>
