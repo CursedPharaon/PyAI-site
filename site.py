@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, send_file
 import requests
 import json
@@ -14,7 +13,28 @@ JSONBIN_KEY = "$2a$10$3T6Ssc3MDy8btFzOD4PTjOzciiAlCszOrB4zJDiorULg2BRrdPWRS"
 BIN_ID = "6a90a8efda38895dfe19be69"
 
 # ============================================
-# ФУНКЦИИ
+# ПАМЯТЬ: ХРАНИМ ИСТОРИЮ ДИАЛОГОВ ДЛЯ САЙТА
+# ============================================
+chat_history = {}
+MAX_HISTORY = 20
+
+def get_history(user_id):
+    if user_id not in chat_history:
+        chat_history[user_id] = []
+    return chat_history[user_id]
+
+def add_to_history(user_id, role, content):
+    history = get_history(user_id)
+    history.append({"role": role, "content": content})
+    if len(history) > MAX_HISTORY:
+        chat_history[user_id] = history[-MAX_HISTORY:]
+
+def clear_history(user_id):
+    if user_id in chat_history:
+        chat_history[user_id] = []
+
+# ============================================
+# ФУНКЦИИ JSONBin
 # ============================================
 def load_users():
     url = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
@@ -107,16 +127,27 @@ def get_subscription_info(username):
             "days_left": 0
         }
 
-def ask_ai(question):
+# ============================================
+# OPENROUTER С ПАМЯТЬЮ
+# ============================================
+def ask_ai_with_history(user_id, question):
     try:
+        history = get_history(user_id)
+        
+        messages = [
+            {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть. Отвечай полезно и понятно. Ты можешь играть в игры, викторины и поддерживать диалог. Запоминай, что говорил пользователь ранее."}
+        ]
+        
+        for msg in history[-10:]:
+            messages.append(msg)
+        
+        messages.append({"role": "user", "content": question})
+        
         r = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             json={
                 "model": "openrouter/free",
-                "messages": [
-                    {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть."},
-                    {"role": "user", "content": question}
-                ]
+                "messages": messages
             },
             headers={
                 'Content-Type': 'application/json',
@@ -125,7 +156,12 @@ def ask_ai(question):
             timeout=30
         )
         r.raise_for_status()
-        return r.json()['choices'][0]['message']['content']
+        response = r.json()['choices'][0]['message']['content']
+        
+        add_to_history(user_id, "user", question)
+        add_to_history(user_id, "assistant", response)
+        
+        return response
     except Exception as e:
         return f"⚠️ Ошибка: {str(e)[:200]}"
 
@@ -199,10 +235,23 @@ def chat():
     
     status = check_subscription(username)
     if status != "active":
-        return jsonify({'success': False, 'error': 'Подписка неактивна'})
+        return jsonify({'success': False, 'error': 'Подписка неактивна. Напишите @cursed_pharaon для продления'})
     
-    response = ask_ai(message)
+    # Используем username как ID для памяти на сайте
+    user_id = f"web_{username}"
+    response = ask_ai_with_history(user_id, message)
     return jsonify({'success': True, 'response': response})
+
+@app.route('/clear_history', methods=['POST'])
+def clear_history_route():
+    data = request.json
+    username = data.get('username', '').strip()
+    if not username:
+        return jsonify({'success': False, 'error': 'Имя не указано'})
+    
+    user_id = f"web_{username}"
+    clear_history(user_id)
+    return jsonify({'success': True, 'message': 'История очищена'})
 
 @app.route('/ping')
 def ping():
