@@ -15,6 +15,13 @@ BIN_ID = "6a90a8efda38895dfe19be69"
 ADMIN_NAME = "cursed_dev"
 
 # ============================================
+# ЗАКРЕПЛЁННАЯ МОДЕЛЬ NVIDIA NEMOTRON 3 ULTRA
+# ============================================
+OPENROUTER_MODEL = "nvidia/nemotron-3-ultra:free"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_API_KEY = "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"
+
+# ============================================
 # ПАМЯТЬ
 # ============================================
 chat_history = {}
@@ -119,7 +126,12 @@ def give_access(username, plan_key):
     if username not in users:
         return False
     
-    PLANS = {"1": {"name": "Неделя", "days": 7}, "2": {"name": "Месяц", "days": 30}, "3": {"name": "Год", "days": 365}, "4": {"name": "Вечная", "days": None}}
+    PLANS = {
+        "1": {"name": "Неделя", "days": 7},
+        "2": {"name": "Месяц", "days": 30},
+        "3": {"name": "Год", "days": 365},
+        "4": {"name": "Вечная", "days": None}
+    }
     plan = PLANS.get(plan_key)
     if not plan:
         return False
@@ -166,7 +178,7 @@ def list_users():
     return result
 
 # ============================================
-# OPENROUTER С ПОТОКОВОЙ ПЕРЕДАЧЕЙ
+# OPENROUTER С ЗАКРЕПЛЁННОЙ МОДЕЛЬЮ
 # ============================================
 def ask_ai_stream(user_id, question):
     """Отправляет запрос к OpenRouter с потоковой передачей"""
@@ -183,15 +195,15 @@ def ask_ai_stream(user_id, question):
     
     try:
         r = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+            OPENROUTER_URL,
             json={
-                "model": "openrouter/free",
+                "model": OPENROUTER_MODEL,
                 "messages": messages,
                 "stream": True
             },
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer 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'
+                'Authorization': f'Bearer {OPENROUTER_API_KEY}'
             },
             timeout=60,
             stream=True
@@ -216,7 +228,6 @@ def ask_ai_stream(user_id, question):
                     except:
                         pass
         
-        # Сохраняем в историю
         add_to_history(user_id, "user", question)
         add_to_history(user_id, "assistant", full_response)
         
@@ -224,6 +235,34 @@ def ask_ai_stream(user_id, question):
         
     except Exception as e:
         yield f"data: {json.dumps({'error': str(e)[:200], 'done': True})}\n\n"
+
+def ask_ai_sync(user_id, question):
+    """Синхронная версия для обычного чата"""
+    try:
+        history = get_history(user_id)
+        messages = [
+            {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть. Отвечай полезно и структурированно."}
+        ]
+        for msg in history[-10:]:
+            messages.append(msg)
+        messages.append({"role": "user", "content": question})
+        
+        r = requests.post(
+            OPENROUTER_URL,
+            json={"model": OPENROUTER_MODEL, "messages": messages},
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {OPENROUTER_API_KEY}'
+            },
+            timeout=30
+        )
+        r.raise_for_status()
+        response = r.json()['choices'][0]['message']['content']
+        add_to_history(user_id, "user", question)
+        add_to_history(user_id, "assistant", response)
+        return response
+    except Exception as e:
+        return f"⚠️ Ошибка: {str(e)[:200]}"
 
 # ============================================
 # МАРШРУТЫ
@@ -286,7 +325,6 @@ def register_web():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """Обычный чат (для обратной совместимости)"""
     data = request.json
     username = data.get('username', '').strip()
     message = data.get('message', '').strip()
@@ -299,53 +337,24 @@ def chat():
         return jsonify({'success': False, 'error': 'Подписка неактивна'})
     
     user_id = f"web_{username}"
-    response = ask_ai_stream_sync(user_id, message)
+    response = ask_ai_sync(user_id, message)
     return jsonify({'success': True, 'response': response})
 
 @app.route('/chat/stream', methods=['POST'])
 def chat_stream():
-    """Потоковый чат (с размышлением и построчной загрузкой)"""
     data = request.json
     username = data.get('username', '').strip()
     message = data.get('message', '').strip()
     
     if not username or not message:
-        return jsonify({'success': False, 'error': 'Введите имя и сообщение'}), 400
+        return jsonify({'error': 'Введите имя и сообщение'}), 400
     
     status = check_subscription(username)
     if status != "active":
-        return jsonify({'success': False, 'error': 'Подписка неактивна'}), 403
+        return jsonify({'error': 'Подписка неактивна'}), 403
     
     user_id = f"web_{username}"
     return Response(ask_ai_stream(user_id, message), mimetype='text/event-stream')
-
-def ask_ai_stream_sync(user_id, question):
-    """Синхронная версия для обычного чата"""
-    try:
-        history = get_history(user_id)
-        messages = [
-            {"role": "system", "content": "Ты — PyAI, дружелюбная нейросеть. Отвечай полезно и структурированно."}
-        ]
-        for msg in history[-10:]:
-            messages.append(msg)
-        messages.append({"role": "user", "content": question})
-        
-        r = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            json={"model": "openrouter/free", "messages": messages},
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer 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'
-            },
-            timeout=30
-        )
-        r.raise_for_status()
-        response = r.json()['choices'][0]['message']['content']
-        add_to_history(user_id, "user", question)
-        add_to_history(user_id, "assistant", response)
-        return response
-    except Exception as e:
-        return f"⚠️ Ошибка: {str(e)[:200]}"
 
 @app.route('/clear_history', methods=['POST'])
 def clear_history_route():
