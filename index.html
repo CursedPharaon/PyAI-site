@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PyAI — Нейросеть</title>
+    <!-- Подключаем Highlight.js для подсветки кода -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Подключаем Marked.js для парсинга Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* ===== ГЛОБАЛЬНЫЕ СТИЛИ ===== */
         * {
@@ -199,10 +204,11 @@
             padding: 10px 14px;
             border-radius: 14px;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.6;
             word-wrap: break-word;
             max-width: 100%;
             overflow-wrap: break-word;
+            width: 100%;
         }
 
         .message.user .bubble {
@@ -226,57 +232,55 @@
             padding: 0 4px;
         }
 
-        /* ===== КОД ===== */
-        .message .bubble pre {
-            background: #1e1e2e;
-            color: #cdd6f4;
-            padding: 12px;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 6px 0;
-            position: relative;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            max-width: 100%;
-            -webkit-overflow-scrolling: touch;
+        /* ===== MARKDOWN СТИЛИ ===== */
+        .message .bubble h1,
+        .message .bubble h2,
+        .message .bubble h3,
+        .message .bubble h4 {
+            margin: 8px 0 4px 0;
+            font-weight: 700;
+        }
+        .message .bubble h1 { font-size: 22px; }
+        .message .bubble h2 { font-size: 18px; }
+        .message .bubble h3 { font-size: 16px; }
+        .message .bubble h4 { font-size: 14px; }
+
+        .message .bubble p {
+            margin: 4px 0;
         }
 
-        .message .bubble pre code {
-            font-family: 'Courier New', monospace;
-            white-space: pre-wrap;
-            word-break: break-word;
-            font-size: 12px;
-        }
-
-        .copy-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #cdd6f4;
-            border: none;
-            padding: 2px 10px;
-            border-radius: 4px;
-            font-size: 10px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .copy-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .copy-btn.copied {
-            background: #a6e3a1;
+        .message .bubble strong {
+            font-weight: 700;
             color: #1a1a2e;
         }
 
-        /* ===== ТАБЛИЦЫ ===== */
+        .message .bubble em {
+            font-style: italic;
+        }
+
+        .message .bubble ul,
+        .message .bubble ol {
+            padding-left: 24px;
+            margin: 6px 0;
+        }
+
+        .message .bubble li {
+            margin: 3px 0;
+        }
+
+        .message .bubble blockquote {
+            border-left: 4px solid #0066ff;
+            padding: 8px 16px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+            color: #495057;
+        }
+
         .message .bubble table {
             border-collapse: collapse;
             width: 100%;
-            margin: 6px 0;
+            margin: 8px 0;
             font-size: 13px;
             display: block;
             overflow-x: auto;
@@ -286,9 +290,8 @@
         .message .bubble th,
         .message .bubble td {
             border: 1px solid #dee2e6;
-            padding: 6px 10px;
+            padding: 6px 12px;
             text-align: left;
-            font-size: 12px;
         }
 
         .message .bubble th {
@@ -300,15 +303,62 @@
             background: #f8f9fa;
         }
 
-        /* ===== ЦИТАТЫ ===== */
-        .message .bubble blockquote {
-            border-left: 3px solid #0066ff;
-            padding: 6px 12px;
-            margin: 6px 0;
-            background: #f8f9fa;
-            border-radius: 0 6px 6px 0;
-            color: #495057;
+        .message .bubble a {
+            color: #0066ff;
+            text-decoration: underline;
+        }
+
+        .message .bubble a:hover {
+            color: #0052cc;
+        }
+
+        .message .bubble hr {
+            border: none;
+            border-top: 1px solid #e9ecef;
+            margin: 8px 0;
+        }
+
+        /* ===== КОД (с Highlight.js) ===== */
+        .message .bubble pre {
+            background: #1e1e2e;
+            border-radius: 10px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .message .bubble pre code {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 13px;
+            line-height: 1.5;
+            color: #cdd6f4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #cdd6f4;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .copy-btn.copied {
+            background: #a6e3a1;
+            color: #1a1a2e;
         }
 
         /* ===== ВВОД ===== */
@@ -905,7 +955,6 @@
 
             usernameDisplay.textContent = data.username;
 
-            // Проверка админа
             if (data.username === ADMIN_NAME) {
                 isAdmin = true;
                 statusBadge.textContent = '👑 Админ';
@@ -937,7 +986,7 @@
         }
 
         // ============================================================
-        // АДМИН-ФУНКЦИИ (только для cursed_dev)
+        // АДМИН-ФУНКЦИИ
         // ============================================================
         function toggleAdminPanel() {
             if (!isAdmin) return;
@@ -950,11 +999,7 @@
             try {
                 const res = await fetch('/admin/listusers');
                 const data = await res.json();
-                if (data.success) {
-                    adminResult.textContent = '📋 Список пользователей:\n' + data.users;
-                } else {
-                    adminResult.textContent = '❌ ' + data.error;
-                }
+                adminResult.textContent = data.success ? '📋 Список:\n' + data.users : '❌ ' + data.error;
             } catch (e) {
                 adminResult.textContent = '❌ Ошибка: ' + e.message;
             }
@@ -962,14 +1007,14 @@
 
         async function adminGiveAccess() {
             if (!isAdmin) return;
-            const username = prompt('Введите имя пользователя:');
+            const username = prompt('Введите имя:');
             if (!username) return;
-            const plan = prompt('Введите план (1-неделя, 2-месяц, 3-год, 4-вечная):');
+            const plan = prompt('План (1-неделя, 2-месяц, 3-год, 4-вечная):');
             if (!plan || !['1','2','3','4'].includes(plan)) {
                 adminResult.textContent = '❌ Неверный план';
                 return;
             }
-            adminResult.textContent = '⏳ Выдача доступа...';
+            adminResult.textContent = '⏳...';
             try {
                 const res = await fetch('/admin/giveaccess', {
                     method: 'POST',
@@ -985,9 +1030,9 @@
 
         async function adminRemoveAccess() {
             if (!isAdmin) return;
-            const username = prompt('Введите имя пользователя:');
+            const username = prompt('Введите имя:');
             if (!username) return;
-            adminResult.textContent = '⏳ Отключение доступа...';
+            adminResult.textContent = '⏳...';
             try {
                 const res = await fetch('/admin/removeaccess', {
                     method: 'POST',
@@ -1003,10 +1048,10 @@
 
         async function adminDeleteUser() {
             if (!isAdmin) return;
-            const username = prompt('Введите имя пользователя для удаления:');
+            const username = prompt('Введите имя:');
             if (!username) return;
-            if (!confirm(`Удалить пользователя ${username}? Это необратимо!`)) return;
-            adminResult.textContent = '⏳ Удаление...';
+            if (!confirm(`Удалить ${username}?`)) return;
+            adminResult.textContent = '⏳...';
             try {
                 const res = await fetch('/admin/deleteuser', {
                     method: 'POST',
@@ -1022,76 +1067,46 @@
 
         async function adminStats() {
             if (!isAdmin) return;
-            adminResult.textContent = '⏳ Загрузка статистики...';
+            adminResult.textContent = '⏳...';
             try {
                 const res = await fetch('/admin/stats');
                 const data = await res.json();
-                if (data.success) {
-                    adminResult.textContent = '📊 Статистика:\n' + data.stats;
-                } else {
-                    adminResult.textContent = '❌ ' + data.error;
-                }
+                adminResult.textContent = data.success ? '📊 Статистика:\n' + data.stats : '❌ ' + data.error;
             } catch (e) {
                 adminResult.textContent = '❌ Ошибка: ' + e.message;
             }
         }
 
         // ============================================================
-        // ЧАТ
+        // ЧАТ С ПОДДЕРЖКОЙ MARKDOWN И КОПИРОВАНИЕМ
         // ============================================================
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function formatMessage(text) {
-            let html = text;
-            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
-                return `<pre><code>${escapeHtml(code.trim())}</code><button class="copy-btn">📋</button></pre>`;
-            });
-            html = html.replace(/\|(.+)\|\n\|[-: |]+\|\n((?:\|.+\|\n?)+)/g, function(match, header, rows) {
-                const headers = header.split('|').filter(h => h.trim());
-                const rowsData = rows.trim().split('\n').map(row => row.split('|').filter(c => c.trim()));
-                let tableHtml = '<table><thead><tr>';
-                headers.forEach(h => { tableHtml += `<th>${escapeHtml(h.trim())}</th>`; });
-                tableHtml += '</tr></thead><tbody>';
-                rowsData.forEach(row => {
-                    tableHtml += '<tr>';
-                    row.forEach(cell => { tableHtml += `<td>${escapeHtml(cell.trim())}</td>`; });
-                    tableHtml += '</tr>';
-                });
-                tableHtml += '</tbody></table>';
-                return tableHtml;
-            });
-            html = html.replace(/^>\s*(.+)$/gm, '<blockquote>$1</blockquote>');
-            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-            html = html.replace(/^-\s*(.+)$/gm, '<li>$1</li>');
-            html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-            html = html.replace(/\n/g, '<br>');
-            return html;
-        }
-
         function addMessage(role, content) {
             const div = document.createElement('div');
             div.className = 'message ' + role;
+
             const label = document.createElement('span');
             label.className = 'label';
             label.textContent = role === 'user' ? '👤 Вы' : '🧠 PyAI';
+
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
-            bubble.innerHTML = formatMessage(content);
-            div.appendChild(label);
-            div.appendChild(bubble);
-            chatMessages.insertBefore(div, typing);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            bubble.querySelectorAll('.copy-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const code = this.parentElement.querySelector('code');
-                    if (code) {
-                        navigator.clipboard.writeText(code.textContent).then(() => {
+            if (role === 'ai') {
+                // Парсим Markdown
+                let html = marked.parse(content);
+                bubble.innerHTML = html;
+                
+                // Подсвечиваем код
+                bubble.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                    
+                    // Добавляем кнопку копирования
+                    const pre = block.parentElement;
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = '📋';
+                    copyBtn.onclick = function() {
+                        navigator.clipboard.writeText(block.textContent).then(() => {
                             this.textContent = '✅';
                             this.classList.add('copied');
                             setTimeout(() => {
@@ -1099,101 +1114,127 @@
                                 this.classList.remove('copied');
                             }, 2000);
                         });
-                    }
+                    };
+                    pre.style.position = 'relative';
+                    pre.appendChild(copyBtn);
                 });
-            });
+            } else {
+                bubble.textContent = content;
+            }
+
+            div.appendChild(label);
+            div.appendChild(bubble);
+
+            chatMessages.insertBefore(div, typing);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         async function sendMessage() {
-    const text = messageInput.value.trim();
-    if (!text || !currentUser) return;
+            const text = messageInput.value.trim();
+            if (!text || !currentUser) return;
 
-    addMessage('user', text);
-    messageInput.value = '';
-    sendBtn.disabled = true;
-    typing.style.display = 'flex';
+            addMessage('user', text);
+            messageInput.value = '';
+            sendBtn.disabled = true;
+            typing.style.display = 'flex';
 
-    try {
-        // Показываем "размышление"
-        const thinkingMsg = document.createElement('div');
-        thinkingMsg.className = 'message ai';
-        const thinkingLabel = document.createElement('span');
-        thinkingLabel.className = 'label';
-        thinkingLabel.textContent = '🧠 PyAI';
-        const thinkingBubble = document.createElement('div');
-        thinkingBubble.className = 'bubble';
-        thinkingBubble.style.color = '#6c757d';
-        thinkingBubble.style.fontStyle = 'italic';
-        thinkingBubble.textContent = '🤔 Размышляю...';
-        thinkingMsg.appendChild(thinkingLabel);
-        thinkingMsg.appendChild(thinkingBubble);
-        chatMessages.insertBefore(thinkingMsg, typing);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+            try {
+                // Показываем "размышление"
+                const thinkingMsg = document.createElement('div');
+                thinkingMsg.className = 'message ai';
+                const thinkingLabel = document.createElement('span');
+                thinkingLabel.className = 'label';
+                thinkingLabel.textContent = '🧠 PyAI';
+                const thinkingBubble = document.createElement('div');
+                thinkingBubble.className = 'bubble';
+                thinkingBubble.style.color = '#6c757d';
+                thinkingBubble.style.fontStyle = 'italic';
+                thinkingBubble.textContent = '🤔 Размышляю...';
+                thinkingMsg.appendChild(thinkingLabel);
+                thinkingMsg.appendChild(thinkingBubble);
+                chatMessages.insertBefore(thinkingMsg, typing);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        const res = await fetch('/chat/stream', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, message: text })
-        });
+                const res = await fetch('/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, message: text })
+                });
 
-        // Удаляем "размышление"
-        thinkingMsg.remove();
+                thinkingMsg.remove();
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let fullResponse = '';
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
 
-        // Создаём сообщение для ответа
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'message ai';
-        const label = document.createElement('span');
-        label.className = 'label';
-        label.textContent = '🧠 PyAI';
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        msgDiv.appendChild(label);
-        msgDiv.appendChild(bubble);
-        chatMessages.insertBefore(msgDiv, typing);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message ai';
+                const label = document.createElement('span');
+                label.className = 'label';
+                label.textContent = '🧠 PyAI';
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                msgDiv.appendChild(label);
+                msgDiv.appendChild(bubble);
+                chatMessages.insertBefore(msgDiv, typing);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
-                    try {
-                        const parsed = JSON.parse(data);
-                        if (parsed.done) {
-                            break;
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.done) break;
+                                if (parsed.text) {
+                                    fullResponse += parsed.text;
+                                    // Обновляем с Markdown
+                                    bubble.innerHTML = marked.parse(fullResponse);
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }
+                            } catch (e) {}
                         }
-                        if (parsed.text) {
-                            fullResponse += parsed.text;
-                            bubble.textContent = fullResponse;
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
-                        }
-                    } catch (e) {
-                        // Игнорируем
                     }
                 }
+
+                if (!fullResponse) {
+                    bubble.textContent = '⚠️ Пустой ответ';
+                }
+
+                // Подсветка кода в финальном ответе
+                bubble.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                    const pre = block.parentElement;
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = '📋';
+                    copyBtn.onclick = function() {
+                        navigator.clipboard.writeText(block.textContent).then(() => {
+                            this.textContent = '✅';
+                            this.classList.add('copied');
+                            setTimeout(() => {
+                                this.textContent = '📋';
+                                this.classList.remove('copied');
+                            }, 2000);
+                        });
+                    };
+                    pre.style.position = 'relative';
+                    pre.appendChild(copyBtn);
+                });
+
+            } catch (error) {
+                addMessage('ai', '❌ Ошибка: ' + error.message);
+            } finally {
+                typing.style.display = 'none';
+                sendBtn.disabled = false;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
             }
         }
-
-        if (!fullResponse) {
-            bubble.textContent = '⚠️ Пустой ответ';
-        }
-
-    } catch (error) {
-        addMessage('ai', '❌ Ошибка: ' + error.message);
-    } finally {
-        typing.style.display = 'none';
-        sendBtn.disabled = false;
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-}
 
         // ============================================================
         // ДОП. ФУНКЦИИ
