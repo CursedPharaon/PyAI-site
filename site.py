@@ -15,9 +15,9 @@ BIN_ID = "6a90a8efda38895dfe19be69"
 ADMIN_NAME = "cursed_dev"
 
 # ============================================
-# ЗАКРЕПЛЁННАЯ МОДЕЛЬ NVIDIA NEMOTRON 3 ULTRA
+# ИСПРАВЛЕННАЯ МОДЕЛЬ (ВОЗВРАЩАЕМ openrouter/free)
 # ============================================
-OPENROUTER_MODEL = "nvidia/nemotron-3-ultra:free"
+OPENROUTER_MODEL = "openrouter/free"  # <--- ВОЗВРАЩАЕМ
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_API_KEY = "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"
 
@@ -178,7 +178,7 @@ def list_users():
     return result
 
 # ============================================
-# OPENROUTER С ЗАКРЕПЛЁННОЙ МОДЕЛЬЮ
+# OPENROUTER С ЛОГИРОВАНИЕМ ОШИБОК
 # ============================================
 def ask_ai_stream(user_id, question):
     """Отправляет запрос к OpenRouter с потоковой передачей"""
@@ -209,6 +209,14 @@ def ask_ai_stream(user_id, question):
             stream=True
         )
         
+        print(f"OpenRouter статус: {r.status_code}")
+        
+        if r.status_code != 200:
+            error_text = r.text[:500]
+            print(f"OpenRouter ошибка: {error_text}")
+            yield f"data: {json.dumps({'error': f'Ошибка API: {r.status_code}', 'done': True})}\n\n"
+            return
+        
         full_response = ""
         for line in r.iter_lines():
             if line:
@@ -228,12 +236,17 @@ def ask_ai_stream(user_id, question):
                     except:
                         pass
         
+        if not full_response:
+            yield f"data: {json.dumps({'error': 'Пустой ответ от модели', 'done': True})}\n\n"
+            return
+        
         add_to_history(user_id, "user", question)
         add_to_history(user_id, "assistant", full_response)
         
         yield f"data: {json.dumps({'text': '', 'done': True})}\n\n"
         
     except Exception as e:
+        print(f"OpenRouter исключение: {e}")
         yield f"data: {json.dumps({'error': str(e)[:200], 'done': True})}\n\n"
 
 def ask_ai_sync(user_id, question):
@@ -256,12 +269,19 @@ def ask_ai_sync(user_id, question):
             },
             timeout=30
         )
+        
+        print(f"OpenRouter статус (sync): {r.status_code}")
+        
+        if r.status_code != 200:
+            return f"⚠️ Ошибка API: {r.status_code} - {r.text[:200]}"
+        
         r.raise_for_status()
         response = r.json()['choices'][0]['message']['content']
         add_to_history(user_id, "user", question)
         add_to_history(user_id, "assistant", response)
         return response
     except Exception as e:
+        print(f"OpenRouter sync ошибка: {e}")
         return f"⚠️ Ошибка: {str(e)[:200]}"
 
 # ============================================
