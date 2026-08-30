@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -70,9 +69,19 @@
         .header-right {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
             justify-content: flex-end;
+        }
+
+        .header-right .btn-menu {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #495057;
+            padding: 0 4px;
+            display: none;
         }
 
         .user-info {
@@ -155,6 +164,125 @@
             background: #218838;
         }
 
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 6px;
+        }
+
+        /* ===== МОБИЛЬНОЕ МЕНЮ ЧАТОВ ===== */
+        .mobile-chat-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 100;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .mobile-chat-overlay.open {
+            display: block;
+        }
+
+        .mobile-chat-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100%;
+            background: #f8f9fa;
+            z-index: 101;
+            padding: 20px 16px;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.1);
+        }
+
+        .mobile-chat-menu.open {
+            transform: translateX(0);
+        }
+
+        .mobile-chat-menu .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .mobile-chat-menu .menu-header h3 {
+            font-size: 16px;
+            color: #1a1a2e;
+        }
+
+        .mobile-chat-menu .menu-header .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .mobile-chat-menu .chat-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 2px 0;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border: 1px solid #e9ecef;
+        }
+
+        .mobile-chat-menu .chat-item:hover {
+            background: #e9ecef;
+        }
+
+        .mobile-chat-menu .chat-item.active {
+            background: #d4edda;
+            border-color: #28a745;
+            font-weight: 600;
+        }
+
+        .mobile-chat-menu .chat-item .delete-chat {
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 4px;
+        }
+
+        .mobile-chat-menu .chat-item .delete-chat:hover {
+            color: #c82333;
+        }
+
+        .mobile-chat-menu .new-chat-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+            background: transparent;
+            color: #495057;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .mobile-chat-menu .new-chat-btn:hover {
+            background: #e9ecef;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         /* ===== ОСНОВНОЙ КОНТЕЙНЕР ===== */
         .main-container {
             display: flex;
@@ -163,7 +291,7 @@
             overflow: hidden;
         }
 
-        /* ===== БОКОВАЯ ПАНЕЛЬ ===== */
+        /* ===== БОКОВАЯ ПАНЕЛЬ (десктоп) ===== */
         .sidebar {
             display: none;
         }
@@ -534,6 +662,26 @@
             box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
         }
 
+        .auth-card .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .auth-card .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #0066ff;
+            cursor: pointer;
+        }
+
+        .auth-card .checkbox-group label {
+            font-size: 13px;
+            color: #495057;
+            cursor: pointer;
+        }
+
         .auth-card .btn {
             width: 100%;
             padding: 10px;
@@ -594,7 +742,7 @@
             color: #721c24;
         }
 
-        /* ===== НОВЫЕ СТИЛИ ДЛЯ ЧАТОВ И ЛИМИТОВ ===== */
+        /* ===== СТИЛИ ДЛЯ ЧАТОВ В САЙДБАРЕ ===== */
         .sidebar-chats {
             max-height: 180px;
             overflow-y: auto;
@@ -635,17 +783,32 @@
             font-weight: 700;
             color: #0066ff;
         }
-        .btn-sm {
-            padding: 4px 10px;
-            font-size: 11px;
-            border-radius: 6px;
-        }
 
         /* ===== АДАПТИВ ===== */
+        @media (max-width: 767px) {
+            .header-right .btn-menu {
+                display: block;
+            }
+            .header-right .user-info {
+                font-size: 11px;
+            }
+            .header-right .status-badge {
+                font-size: 9px;
+                padding: 2px 8px;
+            }
+            .sidebar {
+                display: none !important;
+            }
+        }
+
         @media (min-width: 768px) {
             .header {
                 padding: 12px 24px;
                 min-height: 60px;
+            }
+
+            .header-right .btn-menu {
+                display: none;
             }
 
             .logo-icon {
@@ -791,6 +954,20 @@
 </head>
 <body>
 
+    <!-- ===== МОБИЛЬНОЕ МЕНЮ ЧАТОВ (оверлей) ===== -->
+    <div class="mobile-chat-overlay" id="mobileChatOverlay">
+        <div class="mobile-chat-menu" id="mobileChatMenu">
+            <div class="menu-header">
+                <h3>💬 Чаты</h3>
+                <button class="close-btn" id="closeMobileChat">✕</button>
+            </div>
+            <div id="mobileChatList">
+                <div style="color:#6c757d;font-size:14px;text-align:center;padding:20px 0;">Загрузка...</div>
+            </div>
+            <button class="new-chat-btn" id="mobileNewChatBtn">➕ Новый чат</button>
+        </div>
+    </div>
+
     <!-- ===== ШАПКА ===== -->
     <header class="header" id="header" style="display:none;">
         <div class="logo">
@@ -798,6 +975,7 @@
             <h1>Py<span>AI</span></h1>
         </div>
         <div class="header-right">
+            <button class="btn-menu" id="openMobileChat">☰</button>
             <span class="user-info" id="userInfo"><strong id="usernameDisplay"></strong></span>
             <span class="status-badge" id="statusBadge">🔴 Неактивна</span>
             <button class="btn btn-outline" id="logoutBtn">🚪</button>
@@ -807,7 +985,7 @@
     <!-- ===== ОСНОВНАЯ ОБЛАСТЬ ===== -->
     <div class="main-container" id="mainContainer" style="display:none;">
 
-        <!-- Боковая панель -->
+        <!-- Боковая панель (десктоп) -->
         <aside class="sidebar">
             <div class="sidebar-card">
                 <h3>📊 Подписка</h3>
@@ -889,6 +1067,11 @@
                 <input type="password" id="authPassword" placeholder="Введите пароль" />
             </div>
 
+            <div class="checkbox-group">
+                <input type="checkbox" id="rememberMe" checked />
+                <label for="rememberMe">Запомнить меня</label>
+            </div>
+
             <button class="btn" id="authBtn">Войти</button>
             <div class="switch" id="switchBtn">Нет аккаунта? <span>Зарегистрироваться</span></div>
             <div class="message" id="authMessage"></div>
@@ -919,6 +1102,7 @@
         const authBtn = document.getElementById('authBtn');
         const authMessage = document.getElementById('authMessage');
         const switchBtn = document.getElementById('switchBtn');
+        const rememberMe = document.getElementById('rememberMe');
 
         const header = document.getElementById('header');
         const mainContainer = document.getElementById('mainContainer');
@@ -937,6 +1121,68 @@
         const adminResult = document.getElementById('adminResult');
         const remainingCount = document.getElementById('remainingCount');
         const chatList = document.getElementById('chatList');
+
+        // Мобильное меню
+        const mobileChatOverlay = document.getElementById('mobileChatOverlay');
+        const mobileChatMenu = document.getElementById('mobileChatMenu');
+        const mobileChatList = document.getElementById('mobileChatList');
+        const openMobileChatBtn = document.getElementById('openMobileChat');
+        const closeMobileChatBtn = document.getElementById('closeMobileChat');
+        const mobileNewChatBtn = document.getElementById('mobileNewChatBtn');
+
+        // ============================================================
+        // МОБИЛЬНОЕ МЕНЮ
+        // ============================================================
+        function openMobileMenu() {
+            mobileChatOverlay.classList.add('open');
+            mobileChatMenu.classList.add('open');
+            renderMobileChatList();
+        }
+
+        function closeMobileMenu() {
+            mobileChatOverlay.classList.remove('open');
+            mobileChatMenu.classList.remove('open');
+        }
+
+        openMobileChatBtn.addEventListener('click', openMobileMenu);
+        closeMobileChatBtn.addEventListener('click', closeMobileMenu);
+        mobileChatOverlay.addEventListener('click', function(e) {
+            if (e.target === this) closeMobileMenu();
+        });
+
+        function renderMobileChatList() {
+            if (!allChats.length) {
+                mobileChatList.innerHTML = '<div style="color:#6c757d;font-size:14px;text-align:center;padding:20px 0;">Нет чатов</div>';
+                return;
+            }
+            let html = '';
+            allChats.forEach(chat => {
+                const active = chat.id === currentChatId ? 'active' : '';
+                html += `
+                    <div class="chat-item ${active}" onclick="switchChatMobile('${chat.id}')">
+                        <span>${chat.title}</span>
+                        <span class="delete-chat" onclick="event.stopPropagation();deleteChatMobile('${chat.id}')">✕</span>
+                    </div>
+                `;
+            });
+            mobileChatList.innerHTML = html;
+        }
+
+        async function switchChatMobile(chatId) {
+            await switchChat(chatId);
+            closeMobileMenu();
+        }
+
+        async function deleteChatMobile(chatId) {
+            if (!confirm('Удалить этот чат?')) return;
+            await deleteChat(chatId);
+            renderMobileChatList();
+        }
+
+        mobileNewChatBtn.addEventListener('click', async function() {
+            await createNewChat();
+            closeMobileMenu();
+        });
 
         // ============================================================
         // АВТОРИЗАЦИЯ
@@ -991,7 +1237,11 @@
                 if (data.success) {
                     if (isLogin) {
                         currentUser = username;
-                        localStorage.setItem('pyai_user', username);
+                        if (rememberMe.checked) {
+                            localStorage.setItem('pyai_user', username);
+                        } else {
+                            localStorage.removeItem('pyai_user');
+                        }
                         showApp(data);
                         await loadChats();
                     } else {
@@ -1064,6 +1314,7 @@
                 if (data.success) {
                     allChats = data.chats || [];
                     renderChatList();
+                    renderMobileChatList();
                     if (allChats.length > 0 && !currentChatId) {
                         currentChatId = allChats[0].id;
                     }
@@ -1078,7 +1329,6 @@
                 chatList.innerHTML = '<div style="color:#6c757d;font-size:13px;">Нет чатов</div>';
                 return;
             }
-            
             let html = '';
             allChats.forEach(chat => {
                 const active = chat.id === currentChatId ? 'active' : '';
@@ -1108,6 +1358,7 @@
                         addMessage(msg.role === 'user' ? 'user' : 'ai', msg.content);
                     });
                     renderChatList();
+                    renderMobileChatList();
                     updateLimitInfo(remainingRequests);
                 }
             } catch (e) {
@@ -1445,7 +1696,7 @@
         });
 
         // ============================================================
-        // АВТОВХОД
+        // АВТОВХОД (если "Запомнить меня" был включён)
         // ============================================================
         async function autoLogin() {
             const savedUser = localStorage.getItem('pyai_user');
