@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -593,6 +594,53 @@
             color: #721c24;
         }
 
+        /* ===== НОВЫЕ СТИЛИ ДЛЯ ЧАТОВ И ЛИМИТОВ ===== */
+        .sidebar-chats {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .sidebar-chats .chat-item {
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 2px 0;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-chats .chat-item:hover {
+            background: #e9ecef;
+        }
+        .sidebar-chats .chat-item.active {
+            background: #d4edda;
+            font-weight: 600;
+        }
+        .sidebar-chats .chat-item .delete-chat {
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 0 4px;
+        }
+        .sidebar-chats .chat-item .delete-chat:hover {
+            color: #c82333;
+        }
+        .limit-info {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 6px;
+        }
+        .limit-info .remaining {
+            font-weight: 700;
+            color: #0066ff;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 6px;
+        }
+
         /* ===== АДАПТИВ ===== */
         @media (min-width: 768px) {
             .header {
@@ -765,12 +813,21 @@
                 <h3>📊 Подписка</h3>
                 <p id="sidebarPlan">Нет</p>
                 <p id="sidebarDays" style="font-size:12px;color:#6c757d;"></p>
+                <div class="limit-info">📊 Осталось запросов: <span class="remaining" id="remainingCount">5</span></div>
+            </div>
+
+            <div class="sidebar-card">
+                <h3>💬 Чаты</h3>
+                <div class="sidebar-chats" id="chatList">
+                    <div style="color:#6c757d;font-size:13px;">Загрузка...</div>
+                </div>
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-top:6px;" id="newChatBtn">➕ Новый чат</button>
             </div>
 
             <div class="sidebar-card">
                 <h3>📌 Действия</h3>
                 <div class="quick-actions">
-                    <button onclick="clearChatHistory()">🧹 Очистить память</button>
+                    <button onclick="clearCurrentChat()">🧹 Очистить чат</button>
                     <button onclick="exportChat()">📥 Экспорт чата</button>
                 </div>
             </div>
@@ -845,6 +902,9 @@
         let currentUser = null;
         let isLogin = true;
         let isAdmin = false;
+        let currentChatId = null;
+        let allChats = [];
+        let remainingRequests = 5;
 
         const ADMIN_NAME = "cursed_dev";
 
@@ -875,6 +935,8 @@
         const adminSidebar = document.getElementById('adminSidebar');
         const adminPanel = document.getElementById('adminPanel');
         const adminResult = document.getElementById('adminResult');
+        const remainingCount = document.getElementById('remainingCount');
+        const chatList = document.getElementById('chatList');
 
         // ============================================================
         // АВТОРИЗАЦИЯ
@@ -931,6 +993,7 @@
                         currentUser = username;
                         localStorage.setItem('pyai_user', username);
                         showApp(data);
+                        await loadChats();
                     } else {
                         showAuthMessage('✅ ' + data.message, 'success');
                         authUsername.value = '';
@@ -954,6 +1017,7 @@
             mainContainer.style.display = 'flex';
 
             usernameDisplay.textContent = data.username;
+            updateLimitInfo(5);
 
             if (data.username === ADMIN_NAME) {
                 isAdmin = true;
@@ -983,6 +1047,141 @@
                 sidebarPlan.textContent = '❌ Нет подписки';
                 sidebarDays.textContent = 'Напишите @cursed_pharaon';
             }
+        }
+
+        // ============================================================
+        // ФУНКЦИИ ДЛЯ ЧАТОВ
+        // ============================================================
+        async function loadChats() {
+            if (!currentUser) return;
+            try {
+                const res = await fetch('/chats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    allChats = data.chats || [];
+                    renderChatList();
+                    if (allChats.length > 0 && !currentChatId) {
+                        currentChatId = allChats[0].id;
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderChatList() {
+            if (!allChats.length) {
+                chatList.innerHTML = '<div style="color:#6c757d;font-size:13px;">Нет чатов</div>';
+                return;
+            }
+            
+            let html = '';
+            allChats.forEach(chat => {
+                const active = chat.id === currentChatId ? 'active' : '';
+                html += `
+                    <div class="chat-item ${active}" onclick="switchChat('${chat.id}')">
+                        <span>${chat.title}</span>
+                        <span class="delete-chat" onclick="event.stopPropagation();deleteChat('${chat.id}')">✕</span>
+                    </div>
+                `;
+            });
+            chatList.innerHTML = html;
+        }
+
+        async function switchChat(chatId) {
+            if (!currentUser) return;
+            try {
+                const res = await fetch('/chats/switch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, chat_id: chatId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentChatId = data.chat_id;
+                    document.querySelectorAll('.message').forEach(el => el.remove());
+                    data.history.forEach(msg => {
+                        addMessage(msg.role === 'user' ? 'user' : 'ai', msg.content);
+                    });
+                    renderChatList();
+                    updateLimitInfo(remainingRequests);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteChat(chatId) {
+            if (!currentUser || !confirm('Удалить этот чат?')) return;
+            try {
+                const res = await fetch('/chats/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, chat_id: chatId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadChats();
+                    if (allChats.length > 0) {
+                        await switchChat(allChats[0].id);
+                    } else {
+                        currentChatId = null;
+                        document.querySelectorAll('.message').forEach(el => el.remove());
+                        addMessage('ai', 'Создайте новый чат!');
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function createNewChat() {
+            if (!currentUser) return;
+            try {
+                const res = await fetch('/chats/new', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadChats();
+                    await switchChat(data.chat_id);
+                    addMessage('ai', '🆕 Новый чат создан! Задавай вопрос.');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function clearCurrentChat() {
+            if (!currentUser || !currentChatId) return;
+            if (!confirm('Очистить историю этого чата?')) return;
+            try {
+                const res = await fetch('/clear_history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, chat_id: currentChatId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.querySelectorAll('.message').forEach(el => el.remove());
+                    addMessage('ai', '🧹 История чата очищена!');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function updateLimitInfo(remaining) {
+            if (remaining !== undefined) {
+                remainingRequests = remaining;
+            }
+            remainingCount.textContent = remainingRequests;
         }
 
         // ============================================================
@@ -1078,7 +1277,7 @@
         }
 
         // ============================================================
-        // ЧАТ С ПОДДЕРЖКОЙ MARKDOWN И КОПИРОВАНИЕМ
+        // ЧАТ
         // ============================================================
         function addMessage(role, content) {
             const div = document.createElement('div');
@@ -1092,15 +1291,11 @@
             bubble.className = 'bubble';
 
             if (role === 'ai') {
-                // Парсим Markdown
                 let html = marked.parse(content);
                 bubble.innerHTML = html;
                 
-                // Подсвечиваем код
                 bubble.querySelectorAll('pre code').forEach((block) => {
                     hljs.highlightElement(block);
-                    
-                    // Добавляем кнопку копирования
                     const pre = block.parentElement;
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'copy-btn';
@@ -1139,7 +1334,6 @@
             typing.style.display = 'flex';
 
             try {
-                // Показываем "размышление"
                 const thinkingMsg = document.createElement('div');
                 thinkingMsg.className = 'message ai';
                 const thinkingLabel = document.createElement('span');
@@ -1155,78 +1349,30 @@
                 chatMessages.insertBefore(thinkingMsg, typing);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                const res = await fetch('/chat/stream', {
+                const res = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentUser, message: text })
+                    body: JSON.stringify({ 
+                        username: currentUser, 
+                        message: text,
+                        chat_id: currentChatId 
+                    })
                 });
 
                 thinkingMsg.remove();
+                const data = await res.json();
 
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-                let fullResponse = '';
-
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'message ai';
-                const label = document.createElement('span');
-                label.className = 'label';
-                label.textContent = '🧠 PyAI';
-                const bubble = document.createElement('div');
-                bubble.className = 'bubble';
-                msgDiv.appendChild(label);
-                msgDiv.appendChild(bubble);
-                chatMessages.insertBefore(msgDiv, typing);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            try {
-                                const parsed = JSON.parse(data);
-                                if (parsed.done) break;
-                                if (parsed.text) {
-                                    fullResponse += parsed.text;
-                                    // Обновляем с Markdown
-                                    bubble.innerHTML = marked.parse(fullResponse);
-                                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                                }
-                            } catch (e) {}
-                        }
+                if (data.success) {
+                    if (data.chat_id && data.chat_id !== currentChatId) {
+                        currentChatId = data.chat_id;
+                        await loadChats();
                     }
+                    addMessage('ai', data.response);
+                    updateLimitInfo(data.remaining);
+                    await loadChats();
+                } else {
+                    addMessage('ai', '❌ ' + data.error);
                 }
-
-                if (!fullResponse) {
-                    bubble.textContent = '⚠️ Пустой ответ';
-                }
-
-                // Подсветка кода в финальном ответе
-                bubble.querySelectorAll('pre code').forEach((block) => {
-                    hljs.highlightElement(block);
-                    const pre = block.parentElement;
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'copy-btn';
-                    copyBtn.textContent = '📋';
-                    copyBtn.onclick = function() {
-                        navigator.clipboard.writeText(block.textContent).then(() => {
-                            this.textContent = '✅';
-                            this.classList.add('copied');
-                            setTimeout(() => {
-                                this.textContent = '📋';
-                                this.classList.remove('copied');
-                            }, 2000);
-                        });
-                    };
-                    pre.style.position = 'relative';
-                    pre.appendChild(copyBtn);
-                });
-
             } catch (error) {
                 addMessage('ai', '❌ Ошибка: ' + error.message);
             } finally {
@@ -1240,18 +1386,7 @@
         // ДОП. ФУНКЦИИ
         // ============================================================
         async function clearChatHistory() {
-            if (!currentUser) return;
-            try {
-                const res = await fetch('/clear_history', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentUser })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    addMessage('ai', '🧹 История очищена!');
-                }
-            } catch (e) { console.error(e); }
+            await clearCurrentChat();
         }
 
         function exportChat() {
@@ -1278,6 +1413,7 @@
         function logout() {
             currentUser = null;
             isAdmin = false;
+            currentChatId = null;
             localStorage.removeItem('pyai_user');
             chatMessages.querySelectorAll('.message').forEach(el => el.remove());
             header.style.display = 'none';
@@ -1294,6 +1430,7 @@
         // ОБРАБОТЧИКИ
         // ============================================================
         document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('newChatBtn').addEventListener('click', createNewChat);
         switchBtn.addEventListener('click', switchMode);
         authBtn.addEventListener('click', handleAuth);
         sendBtn.addEventListener('click', sendMessage);
@@ -1328,6 +1465,7 @@
                     authContainer.style.display = 'none';
                     header.style.display = 'flex';
                     mainContainer.style.display = 'flex';
+                    await loadChats();
                 } else {
                     localStorage.removeItem('pyai_user');
                 }
